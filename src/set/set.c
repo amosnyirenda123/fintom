@@ -2,60 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
-
-bool compare_pointer(const void* a, const void* b) {
-    return a == b;
-}
-
-size_t hash_pointer(const void* a) {
-    return (size_t)a;
-}
-
-void* copy_pointer(const void* a) {
-    return (void*)a; 
-}
-
-void free_pointer(void* a) {
-    
-}
-
-bool compare_int(const void* a, const void* b) {
-    return *(const int*)a == *(const int*)b;
-}
-
-bool compare_double(const void* a, const void* b) {
-    return *(const double*)a == *(const double*)b;
-}
-
-bool compare_string(const void* a, const void* b) {
-    const char* str_a = *(const char* const*)a;
-    const char* str_b = *(const char* const*)b;
-    if (str_a == str_b) return true;
-    if (!str_a || !str_b) return false;
-    return strcmp(str_a, str_b) == 0;
-}
-
-size_t hash_int(const void* a) {
-    return *(const int*)a;
-}
-
-size_t hash_double(const void* a) {
-    double value = *(const double*)a;
-    return *(size_t*)&value;
-}
-
-size_t hash_string(const void* a) {
-    const char* str = *(const char* const*)a;
-    if (!str) return 0;
-    
-    size_t hash = 5381;
-    int c;
-    while ((c = *str++)) {
-        hash = ((hash << 5) + hash) + c; // hash * 33 + c
-    }
-    return hash;
-}
+#include "../../include/common.h"
 
 
 Set* set_create(size_t element_size, CompareFunction compare, HashFunction hash) {

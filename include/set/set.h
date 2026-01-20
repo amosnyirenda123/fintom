@@ -70,18 +70,7 @@ bool set_reserve(Set* set, size_t capacity);
 double set_load_factor(const Set* set);
 
 // Predefined functions for common types
-bool compare_int(const void* a, const void* b);
-bool compare_double(const void* a, const void* b);
-bool compare_string(const void* a, const void* b);
-bool compare_pointer(const void* a, const void* b);
 
-size_t hash_int(const void* a);
-size_t hash_double(const void* a);
-size_t hash_string(const void* a);
-size_t hash_pointer(const void* a);
-
-void* copy_pointer(const void* a);
-void free_pointer(void* a);
 
 
 #ifdef SET_DEBUG_ENABLE

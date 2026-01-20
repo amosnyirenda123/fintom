@@ -1,6 +1,6 @@
 #ifndef HASH_TABLE_H
 #define HASH_TABLE_H
-
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -47,7 +47,7 @@ void hash_table_clear(HashTable* table);
 
 
 bool hash_table_insert(HashTable* table, const void* key, const void* value);
-bool hash_table_upsert(HashTable* table, const void* key, const void* value);
+//bool hash_table_upsert(HashTable* table, const void* key, const void* value);
 bool hash_table_remove(HashTable* table, const void* key);
 void* hash_table_get(const HashTable* table, const void* key);
 bool hash_table_contains(const HashTable* table, const void* key);
@@ -70,55 +70,26 @@ bool hash_table_rehash(HashTable* table, size_t new_capacity);
 HashTable* hash_table_copy(const HashTable* table);
 
 // ==================== Serialization ====================
-bool hash_table_save_to_file(const HashTable* table, const char* filename);
-HashTable* hash_table_load_from_file(const char* filename,
-                                    size_t key_size,
-                                    size_t value_size,
-                                    HashFunction hash_func,
-                                    CompareFunction key_compare_func,
-                                    KeyCopyFunction key_copy_func,
-                                    KeyFreeFunction key_free_func,
-                                    ValueCopyFunction value_copy_func,
-                                    ValueFreeFunction value_free_func);
+//bool hash_table_save_to_file(const HashTable* table, const char* filename);
+//HashTable* hash_table_load_from_file(const char* filename,
+                                    // size_t key_size,
+                                    // size_t value_size,
+                                    // HashFunction hash_func,
+                                    // CompareFunction key_compare_func,
+                                    // KeyCopyFunction key_copy_func,
+                                    // KeyFreeFunction key_free_func,
+                                    // ValueCopyFunction value_copy_func,
+                                    // ValueFreeFunction value_free_func);
 
 
-// Hash functions
-size_t hash_string(const void* key, size_t table_size);
-size_t hash_int(const void* key, size_t table_size);
-size_t hash_pointer(const void* key, size_t table_size);
-
-// Comparison functions
-bool compare_strings(const void* key1, const void* key2);
-bool compare_ints(const void* key1, const void* key2);
-bool compare_pointers(const void* key1, const void* key2);
-
-// Copy functions
-void* copy_string(const void* str);
-void* copy_int(const void* num);
-void* copy_pointer(const void* ptr);
-
-// Free functions
-void free_string(void* str);
-void free_int(void* num);
-void free_pointer(void* ptr);
 
 // ==================== Utility Functions ====================
-// Statistics
-typedef struct {
-    size_t element_count;
-    size_t bucket_count;
-    size_t max_bucket_length;
-    size_t min_bucket_length;
-    double average_bucket_length;
-    double load_factor;
-} HashTableStats;
 
-HashTableStats hash_table_get_stats(const HashTable* table);
-void hash_table_print_stats(const HashTable* table);
 
 // Debug functions
 #ifdef HASH_TABLE_DEBUG
 #include <stdio.h>
+
 
 // Print function types
 typedef void (*KeyPrintFunction)(const void* key);

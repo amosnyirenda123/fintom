@@ -1,11 +1,15 @@
 #include "../../include/hash/hash_table.h"
+#include "../../include/common.h"
+#include <string.h>
+
+
 
 
 typedef struct HashNode {
     void* key;
     void* value;
     struct HashNode* next;
-    uint32_t hash;  // Store hash for faster resizing
+    uint32_t hash;  //hash for faster resizing
 } HashNode;
 
 struct HashTable {
@@ -45,6 +49,8 @@ static const size_t primes[] = {
 };
 
 
+// Helper Functions
+
 static size_t next_prime(size_t n) {
     for (size_t i = 0; i < sizeof(primes)/sizeof(primes[0]); i++) {
         if (primes[i] >= n) return primes[i];
@@ -61,6 +67,17 @@ static size_t next_prime(size_t n) {
     return n + 1;
 }
 
+
+static void resize_if_needed(HashTable* table) {
+    if (table->element_count >= table->resize_threshold) {
+        size_t new_capacity = table->node_count * 2;
+        hash_table_rehash(table, new_capacity);
+    }
+}
+
+
+
+//Constructors
 HashTable* hash_table_create(
     size_t key_size,
     size_t value_size,
@@ -105,11 +122,13 @@ HashTable* hash_table_create(
     return table;
 }
 
+
+
 HashTable* hash_table_create_string_string(size_t initial_capacity) {
     return hash_table_create(
         sizeof(char*), sizeof(char*),
         initial_capacity,
-        hash_string,
+        hash_string_v2,
         compare_strings,
         copy_string,
         free_string,
@@ -119,13 +138,98 @@ HashTable* hash_table_create_string_string(size_t initial_capacity) {
 }
 
 
-static void resize_if_needed(HashTable* table) {
-    if (table->element_count >= table->resize_threshold) {
-        size_t new_capacity = table->node_count * 2;
-        hash_table_rehash(table, new_capacity);
-    }
+HashTable* hash_table_create_string_int(size_t initial_capacity) {
+    return hash_table_create(
+        sizeof(char*),       // key_size
+        sizeof(int),         // value_size
+        initial_capacity,
+        hash_string_v2,         // hash_func for strings
+        compare_strings,     // key_compare_func for strings
+        copy_string,         // key_copy_func for strings
+        free_string,         // key_free_func for strings
+        copy_int,            // value_copy_func for ints
+        free_int             // value_free_func for ints
+    );
 }
 
+HashTable* hash_table_create_int_string(size_t initial_capacity) {
+    return hash_table_create(
+        sizeof(int),         // key_size
+        sizeof(char*),       // value_size
+        initial_capacity,
+        hash_int_v2,            // hash_func for ints
+        compare_ints,        // key_compare_func for ints
+        copy_int,            // key_copy_func for ints
+        free_int,            // key_free_func for ints
+        copy_string,         // value_copy_func for strings
+        free_string          // value_free_func for strings
+    );
+}
+
+HashTable* hash_table_create_int_int(size_t initial_capacity) {
+    return hash_table_create(
+        sizeof(int),         // key_size
+        sizeof(int),         // value_size
+        initial_capacity,
+        hash_int_v2,            // hash_func for ints
+        compare_ints,        // key_compare_func for ints
+        copy_int,            // key_copy_func for ints
+        free_int,            // key_free_func for ints
+        copy_int,            // value_copy_func for ints
+        free_int             // value_free_func for ints
+    );
+}
+
+
+HashTable* hash_table_create_string_ptr(size_t initial_capacity) {
+    return hash_table_create(
+        sizeof(char*),
+        sizeof(void*),
+        initial_capacity,
+        hash_string_v2,
+        compare_strings,
+        copy_string,
+        free_string,
+        copy_pointer,
+        free_pointer
+    );
+}
+
+HashTable* hash_table_create_ptr_string(size_t initial_capacity) {
+    return hash_table_create(
+        sizeof(void*),
+        sizeof(char*),
+        initial_capacity,
+        hash_pointer_v2,
+        compare_pointers,
+        copy_pointer,
+        free_pointer,
+        copy_string,
+        free_string
+    );
+}
+
+HashTable* hash_table_create_ptr_ptr(size_t initial_capacity) {
+    return hash_table_create(
+        sizeof(void*),
+        sizeof(void*),
+        initial_capacity,
+        hash_pointer_v2,
+        compare_pointers,
+        copy_pointer,
+        free_pointer,
+        copy_pointer,
+        free_pointer
+    );
+}
+
+
+
+
+
+
+
+// Hash Table Operations
 
 bool hash_table_insert(HashTable* table, const void* key, const void* value) {
     if (!table || !key) return false;
@@ -182,97 +286,328 @@ void* hash_table_get(const HashTable* table, const void* key) {
 }
 
 
-bool hash_table_remove(HashTable* table, const void* key){
-
-}
-
-bool hash_table_contains(const HashTable* table, const void* key){
-
-}
-
-void hash_table_destroy(HashTable* table){
-
-}
-void hash_table_clear(HashTable* table){
-
-}
-
-
-size_t hash_table_size(const HashTable* table){
-
-}
-size_t hash_table_capacity(const HashTable* table){
-
-}
-bool hash_table_is_empty(const HashTable* table){
-
-}
-double hash_table_load_factor(const HashTable* table){
-
-}
-
-
-//Iterators
-HashTableIterator hash_table_iterator_create(HashTable* table){
-
-}
-bool hash_table_iterator_has_next(const HashTableIterator* iter){
-
-}
-bool hash_table_iterator_next(HashTableIterator* iter, void* key_out, void* value_out){
-
-}
-void hash_table_iterator_reset(HashTableIterator* iter){
-
-}
-
-bool hash_table_reserve(HashTable* table, size_t new_capacity)
-{
-
-}
-bool hash_table_rehash(HashTable* table, size_t new_capacity)
-{
-
-}
-HashTable* hash_table_copy(const HashTable* table)
-{
+bool hash_table_remove(HashTable* table, const void* key) {
+    if (!table || !key) return false;
     
-}
-
-
-//default hash functions
-
-size_t hash_string(const void* key, size_t table_size) {
-    const char* str = *(const char* const*)key;
-    size_t hash = 5381;
-    int c;
+    uint32_t hash = table->hash_func(key, table->node_count);
+    size_t index = hash % table->node_count;
     
-    while ((c = *str++)) {
-        hash = ((hash << 5) + hash) + c; // hash * 33 + c
+    HashNode* current = table->nodes[index];
+    HashNode* prev = NULL;
+    
+    while (current) {
+        if (current->hash == hash && 
+            table->key_compare_func(current->key, key)) {
+            
+           
+            if (prev) {
+                prev->next = current->next;
+            } else {
+                table->nodes[index] = current->next;
+            }
+            
+            
+            table->key_free_func(current->key);
+            table->value_free_func(current->value);
+            free(current);
+            
+            table->element_count--;
+            return true;
+        }
+        
+        prev = current;
+        current = current->next;
     }
     
-    return hash % table_size;
+    return false;  
 }
 
-
-bool compare_strings(const void* key1, const void* key2) {
-    const char* str1 = *(const char* const*)key1;
-    const char* str2 = *(const char* const*)key2;
+bool hash_table_contains(const HashTable* table, const void* key) {
+    if (!table || !key) return false;
     
-    if (str1 == str2) return true;
-    if (!str1 || !str2) return false;
-    return strcmp(str1, str2) == 0;
+    uint32_t hash = table->hash_func(key, table->node_count);
+    size_t index = hash % table->node_count;
+    
+    HashNode* current = table->nodes[index];
+    
+    while (current) {
+        if (current->hash == hash && 
+            table->key_compare_func(current->key, key)) {
+            return true;
+        }
+        current = current->next;
+    }
+    
+    return false;
 }
 
-void* copy_string(const void* str) {
-    const char* original = *(const char* const*)str;
-    if (!original) return NULL;
-    return strdup(original);
+
+void hash_table_destroy(HashTable* table) {
+    if (!table) return;
+    
+    hash_table_clear(table);
+    
+    free(table->nodes);
+    
+    free(table);
 }
 
-void free_string(void* str) {
-    free(*(char**)str);
+void hash_table_clear(HashTable* table) {
+    if (!table) return;
+    
+    for (size_t i = 0; i < table->node_count; i++) {
+        HashNode* current = table->nodes[i];
+        while (current) {
+            HashNode* next = current->next;
+            
+            table->key_free_func(current->key);
+            table->value_free_func(current->value);
+            free(current);
+            
+            current = next;
+        }
+        table->nodes[i] = NULL;
+    }
+    
+    table->element_count = 0;
 }
+
+
+// Hash Table Stats
+size_t hash_table_size(const HashTable* table) {
+    return table ? table->element_count : 0;
+}
+
+size_t hash_table_capacity(const HashTable* table) {
+    return table ? table->node_count : 0;
+}
+
+bool hash_table_is_empty(const HashTable* table) {
+    return !table || table->element_count == 0;
+}
+
+double hash_table_load_factor(const HashTable* table) {
+    if (!table || table->node_count == 0) return 0.0;
+    return (double)table->element_count / (double)table->node_count;
+}
+
+
+// ==================== Iterators ====================
+
+HashTableIterator hash_table_iterator_create(HashTable* table) {
+    HashTableIterator iter = {0};
+    
+    if (table) {
+        iter.table = table;
+        iter.bucket_index = 0;
+        iter.current_node = NULL;
+        
+        // Find first non-empty bucket
+        while (iter.bucket_index < table->node_count && 
+               !table->nodes[iter.bucket_index]) {
+            iter.bucket_index++;
+        }
+        
+        if (iter.bucket_index < table->node_count) {
+            iter.current_node = table->nodes[iter.bucket_index];
+        }
+    }
+    
+    return iter;
+}
+
+bool hash_table_iterator_has_next(const HashTableIterator* iter) {
+    if (!iter || !iter->table) return false;
+    
+    // If we have a current node, check if it has a next
+    if (iter->current_node) {
+        // Current node has a next in the same bucket
+        if (iter->current_node->next) {
+            return true;
+        }
+        
+        // Look for next non-empty bucket
+        size_t next_bucket = iter->bucket_index + 1;
+        while (next_bucket < iter->table->node_count) {
+            if (iter->table->nodes[next_bucket]) {
+                return true;
+            }
+            next_bucket++;
+        }
+    }
+    
+    return false;
+}
+
+bool hash_table_iterator_next(HashTableIterator* iter, void* key_out, void* value_out) {
+    if (!iter || !iter->table || !iter->current_node) {
+        return false;
+    }
+    
+    // Copy current key and value to output
+    if (key_out) {
+        memcpy(key_out, iter->current_node->key, iter->table->key_size);
+    }
+    if (value_out) {
+        memcpy(value_out, iter->current_node->value, iter->table->value_size);
+    }
+    
+    // Move to next node
+    if (iter->current_node->next) {
+        // Next node in same bucket
+        iter->current_node = iter->current_node->next;
+    } else {
+        // Find next non-empty bucket
+        iter->bucket_index++;
+        while (iter->bucket_index < iter->table->node_count) {
+            if (iter->table->nodes[iter->bucket_index]) {
+                iter->current_node = iter->table->nodes[iter->bucket_index];
+                return true;
+            }
+            iter->bucket_index++;
+        }
+        // No more elements
+        iter->current_node = NULL;
+    }
+    
+    return true;
+}
+
+void hash_table_iterator_reset(HashTableIterator* iter) {
+    if (!iter) return;
+    
+    iter->bucket_index = 0;
+    iter->current_node = NULL;
+    
+    if (iter->table) {
+        // Find first non-empty bucket
+        while (iter->bucket_index < iter->table->node_count && 
+               !iter->table->nodes[iter->bucket_index]) {
+            iter->bucket_index++;
+        }
+        
+        if (iter->bucket_index < iter->table->node_count) {
+            iter->current_node = iter->table->nodes[iter->bucket_index];
+        }
+    }
+}
+
+// ==================== Table Operations ====================
+
+bool hash_table_reserve(HashTable* table, size_t new_capacity) {
+    if (!table) return false;
+    
+    if (new_capacity <= table->node_count) {
+        return true;  // Already has enough capacity
+    }
+    
+    return hash_table_rehash(table, new_capacity);
+}
+
+bool hash_table_rehash(HashTable* table, size_t new_capacity) {
+    if (!table) return false;
+    
+    // Calculate next prime capacity
+    size_t actual_capacity = next_prime(new_capacity);
+    if (actual_capacity <= table->node_count) {
+        actual_capacity = next_prime(table->node_count * 2);
+    }
+    
+    // Create new buckets array
+    HashNode** new_buckets = calloc(actual_capacity, sizeof(HashNode*));
+    if (!new_buckets) {
+        return false;
+    }
+    
+    // Rehash all elements
+    for (size_t i = 0; i < table->node_count; i++) {
+        HashNode* current = table->nodes[i];
+        while (current) {
+            HashNode* next = current->next;
+            
+            // Recalculate hash for new bucket count
+            size_t new_index = current->hash % actual_capacity;
+            
+            // Insert into new bucket
+            current->next = new_buckets[new_index];
+            new_buckets[new_index] = current;
+            
+            current = next;
+        }
+    }
+    
+    // Update table
+    free(table->nodes);
+    table->nodes = new_buckets;
+    table->node_count = actual_capacity;
+    table->resize_threshold = (size_t)(actual_capacity * table->max_load_factor);
+    
+    return true;
+}
+
+HashTable* hash_table_copy(const HashTable* table) {
+    if (!table) return NULL;
+    
+    // Create new table with same configuration
+    HashTable* new_table = malloc(sizeof(HashTable));
+    if (!new_table) return NULL;
+    
+    memcpy(new_table, table, sizeof(HashTable));
+    
+    // Allocate new buckets array
+    new_table->nodes = calloc(table->node_count, sizeof(HashNode*));
+    if (!new_table->nodes) {
+        free(new_table);
+        return NULL;
+    }
+    
+    // Copy all nodes
+    for (size_t i = 0; i < table->node_count; i++) {
+        HashNode* current = table->nodes[i];
+        HashNode** new_current_ptr = &new_table->nodes[i];
+        
+        while (current) {
+            // Create new node
+            HashNode* new_node = malloc(sizeof(HashNode));
+            if (!new_node) {
+                // Cleanup on failure
+                hash_table_destroy(new_table);
+                return NULL;
+            }
+            
+            // Copy node metadata
+            new_node->hash = current->hash;
+            
+            // Copy key using copy function
+            new_node->key = table->key_copy_func(current->key);
+            if (!new_node->key && table->key_size > 0) {
+                free(new_node);
+                hash_table_destroy(new_table);
+                return NULL;
+            }
+            
+            // Copy value using copy function
+            new_node->value = table->value_copy_func(current->value);
+            if (!new_node->value && table->value_size > 0) {
+                table->key_free_func(new_node->key);
+                free(new_node);
+                hash_table_destroy(new_table);
+                return NULL;
+            }
+            
+            // Link node
+            new_node->next = NULL;
+            *new_current_ptr = new_node;
+            new_current_ptr = &new_node->next;
+            
+            current = current->next;
+        }
+    }
+    
+    return new_table;
+}
+
+
 
 
 
@@ -322,7 +657,7 @@ void hash_table_print(const HashTable* table,
     
     printf("\n=== HashTable Debug Print ===\n");
     printf("Elements: %zu, Buckets: %zu, Load Factor: %.2f%%\n",
-           table->element_count, table->bucket_count,
+           table->element_count, table->node_count,
            hash_table_load_factor(table) * 100);
     printf("Key size: %zu bytes, Value size: %zu bytes\n",
            table->key_size, table->value_size);
@@ -331,8 +666,8 @@ void hash_table_print(const HashTable* table,
     printf("\nBucket Contents:\n");
     printf("========================================\n");
     
-    for (size_t i = 0; i < table->bucket_count; i++) {
-        HashNode* node = table->buckets[i];
+    for (size_t i = 0; i < table->node_count; i++) {
+        HashNode* node = table->nodes[i];
         if (node) {
             printf("[%04zu]: ", i);
             while (node) {
@@ -365,57 +700,7 @@ void hash_table_print(const HashTable* table,
     printf("========================================\n\n");
 }
 
-void hash_table_print_detailed_stats(const HashTable* table) {
-    if (!table) return;
-    
-    HashTableStats stats = hash_table_get_stats(table);
-    
-    printf("\n=== HashTable Detailed Statistics ===\n");
-    printf("Total Elements: %zu\n", stats.element_count);
-    printf("Total Buckets: %zu\n", stats.bucket_count);
-    printf("Load Factor: %.2f%%\n", stats.load_factor * 100);
-    printf("Max Bucket Length: %zu\n", stats.max_bucket_length);
-    printf("Min Bucket Length: %zu\n", stats.min_bucket_length);
-    printf("Average Bucket Length: %.2f\n", stats.average_bucket_length);
-    
-    // Calculate empty buckets
-    size_t empty_buckets = 0;
-    for (size_t i = 0; i < table->bucket_count; i++) {
-        if (table->buckets[i] == NULL) {
-            empty_buckets++;
-        }
-    }
-    
-    printf("Empty Buckets: %zu (%.1f%%)\n", empty_buckets,
-           (double)empty_buckets / table->bucket_count * 100);
-    
-    // Bucket length distribution
-    printf("\nBucket Length Distribution:\n");
-    size_t max_len = stats.max_bucket_length;
-    size_t* distribution = calloc(max_len + 1, sizeof(size_t));
-    
-    if (distribution) {
-        for (size_t i = 0; i < table->bucket_count; i++) {
-            size_t len = 0;
-            HashNode* node = table->buckets[i];
-            while (node) {
-                len++;
-                node = node->next;
-            }
-            distribution[len]++;
-        }
-        
-        for (size_t i = 0; i <= max_len; i++) {
-            if (distribution[i] > 0) {
-                printf("  Length %zu: %zu buckets (%.1f%%)\n", 
-                       i, distribution[i],
-                       (double)distribution[i] / table->bucket_count * 100);
-            }
-        }
-        free(distribution);
-    }
-    printf("\n");
-}
+
 
 void hash_table_print_bucket_distribution(const HashTable* table) {
     if (!table) return;
@@ -424,9 +709,9 @@ void hash_table_print_bucket_distribution(const HashTable* table) {
     
     // Create a histogram
     size_t max_len = 0;
-    for (size_t i = 0; i < table->bucket_count; i++) {
+    for (size_t i = 0; i < table->node_count; i++) {
         size_t len = 0;
-        HashNode* node = table->buckets[i];
+        HashNode* node = table->nodes[i];
         while (node) {
             len++;
             node = node->next;
@@ -437,9 +722,9 @@ void hash_table_print_bucket_distribution(const HashTable* table) {
     size_t* histogram = calloc(max_len + 1, sizeof(size_t));
     if (!histogram) return;
     
-    for (size_t i = 0; i < table->bucket_count; i++) {
+    for (size_t i = 0; i < table->node_count; i++) {
         size_t len = 0;
-        HashNode* node = table->buckets[i];
+        HashNode* node = table->nodes[i];
         while (node) {
             len++;
             node = node->next;
@@ -478,12 +763,12 @@ bool hash_table_validate(const HashTable* table) {
         return false;
     }
     
-    if (!table->buckets) {
+    if (!table->nodes) {
         printf("ERROR: Buckets array is NULL\n");
         return false;
     }
     
-    if (table->bucket_count == 0) {
+    if (table->node_count == 0) {
         printf("ERROR: Bucket count is zero\n");
         return false;
     }
@@ -495,14 +780,14 @@ bool hash_table_validate(const HashTable* table) {
     
     // Count elements
     size_t counted_elements = 0;
-    for (size_t i = 0; i < table->bucket_count; i++) {
-        HashNode* node = table->buckets[i];
+    for (size_t i = 0; i < table->node_count; i++) {
+        HashNode* node = table->nodes[i];
         while (node) {
             counted_elements++;
             
             // Validate hash
-            uint32_t computed_hash = table->hash_func(node->key, table->bucket_count);
-            size_t computed_index = computed_hash % table->bucket_count;
+            uint32_t computed_hash = table->hash_func(node->key, table->node_count);
+            size_t computed_index = computed_hash % table->node_count;
             
             if (computed_index != i) {
                 printf("ERROR: Node in wrong bucket! Hash: %u, Expected index: %zu, Actual index: %zu\n",
@@ -550,7 +835,7 @@ bool hash_table_dump_to_file(const HashTable* table,
     fprintf(file, "================\n\n");
     fprintf(file, "Configuration:\n");
     fprintf(file, "  Elements: %zu\n", table->element_count);
-    fprintf(file, "  Buckets: %zu\n", table->bucket_count);
+    fprintf(file, "  Buckets: %zu\n", table->node_count);
     fprintf(file, "  Load Factor: %.2f%%\n", hash_table_load_factor(table) * 100);
     fprintf(file, "  Key Size: %zu bytes\n", table->key_size);
     fprintf(file, "  Value Size: %zu bytes\n", table->value_size);
@@ -559,8 +844,8 @@ bool hash_table_dump_to_file(const HashTable* table,
     fprintf(file, "Contents:\n");
     fprintf(file, "---------\n");
     
-    for (size_t i = 0; i < table->bucket_count; i++) {
-        HashNode* node = table->buckets[i];
+    for (size_t i = 0; i < table->node_count; i++) {
+        HashNode* node = table->nodes[i];
         if (node) {
             fprintf(file, "Bucket [%04zu]:\n", i);
             int item_num = 0;
@@ -662,11 +947,11 @@ HashTableMemoryStats hash_table_get_memory_stats(const HashTable* table) {
     stats.table_struct_size = sizeof(HashTable);
     
     // Buckets array
-    stats.buckets_memory = table->bucket_count * sizeof(HashNode*);
+    stats.buckets_memory = table->node_count * sizeof(HashNode*);
     
     // Nodes and their contents
-    for (size_t i = 0; i < table->bucket_count; i++) {
-        HashNode* node = table->buckets[i];
+    for (size_t i = 0; i < table->node_count; i++) {
+        HashNode* node = table->nodes[i];
         while (node) {
             stats.nodes_memory += sizeof(HashNode);
             

@@ -16,5 +16,7 @@ endif()
 
 add_executable(maintool
     main.c
+    src/common.c
     src/set/set.c
+    src/hash/hash_table.c
 )

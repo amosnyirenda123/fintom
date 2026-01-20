@@ -1,59 +1,118 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "include/hash/hash_table.h"
+#include "include/common.h"
 
-#include "include/set/set.h"
+
+void example_string_int() {
+    printf("=== String -> Int Map Example ===\n");
+    
+    HashTable* table = hash_table_create_string_int(8);
+    
+    // Insert string->int pairs
+    char* keys[] = {"apples", "bananas", "cherries"};
+    int values[] = {5, 10, 15};
+    
+    for (int i = 0; i < 3; i++) {
+        hash_table_insert(table, &keys[i], &values[i]);
+    }
+    
+    // Retrieve values
+    char* key = "bananas";
+    int* result = hash_table_get(table, &key);
+    if (result) {
+        printf("Found '%s': %d\n", key, *result);
+    }
+    
+    hash_table_destroy(table);
+}
+
+void example_int_string() {
+    printf("\n=== Int -> String Map Example ===\n");
+    
+    HashTable* table = hash_table_create_int_string(8);
+    
+    // Insert int->string pairs
+    int keys[] = {100, 200, 300};
+    char* values[] = {"error", "warning", "info"};
+    
+    for (int i = 0; i < 3; i++) {
+        hash_table_insert(table, &keys[i], &values[i]);
+    }
+    
+    // Retrieve values
+    int key = 200;
+    char** result = hash_table_get(table, &key);
+    if (result) {
+        printf("Found %d: '%s'\n", key, *result);
+    }
+    
+    hash_table_destroy(table);
+}
+
+void example_int_int() {
+    printf("\n=== Int -> Int Map Example ===\n");
+    
+    HashTable* table = hash_table_create_int_int(8);
+    
+    // Insert int->int pairs (e.g., ID -> age)
+    int keys[] = {1, 2, 3};
+    int values[] = {25, 30, 35};
+    
+    for (int i = 0; i < 3; i++) {
+        hash_table_insert(table, &keys[i], &values[i]);
+    }
+    
+    // Update a value
+    int key = 2;
+    int new_age = 31;
+    hash_table_insert(table, &key, &new_age);  // Will update existing
+    
+    // Check all entries
+    HashTableIterator iter = hash_table_iterator_create(table);
+    int k, v;
+    while (hash_table_iterator_next(&iter, &k, &v)) {
+        printf("ID %d -> Age %d\n", k, v);
+    }
+    
+    hash_table_destroy(table);
+}
+
+// Example with custom integer keys
+void example_custom_ints() {
+    printf("\n=== Custom Integer Usage ===\n");
+    
+    // Using the int comparison and copy functions directly
+    int a = 42;
+    int b = 42;
+    int c = 100;
+    
+    printf("compare_ints(&a, &b): %s\n", 
+           compare_ints(&a, &b) ? "true" : "false");  // true
+    
+    printf("compare_ints(&a, &c): %s\n", 
+           compare_ints(&a, &c) ? "true" : "false");  // false
+    
+    // Test copy function
+    int* copy = copy_int(&a);
+    printf("Copied value: %d\n", *copy);  // 42
+    free_int(copy);
+}
+
 
 int main()
 {
-    Set* int_set = set_create(sizeof(int), compare_int, hash_int);
-    for (int i = 0; i < 10; i++) {
-        set_insert(int_set, &i);
-    }
 
-    Set* str_set = set_create(sizeof(char*), compare_string, hash_string);
-    const char* words[] = {"apple", "banana", "cherry", NULL};
-    for (int i = 0; words[i]; i++) {
-        set_insert(str_set, &words[i]);
-    }
-
-    Set* setA = set_create(sizeof(int), compare_int, hash_int);
-    Set* setB = set_create(sizeof(int), compare_int, hash_int);
-
-    int a_values[] = {1, 2, 3, 4};
-    int b_values[] = {3, 4, 5, 6};
-    
-    for (int i = 0; i < 4; i++) {
-        set_insert(setA, &a_values[i]);
-        set_insert(setB, &b_values[i]);
-    }
-
-    Set* union_set = set_union(setA, setB);
-    Set* inter_set = set_intersection(setA, setB);
-    Set* diff_set = set_difference(setA, setB);
-
+    //example_string_int();
+    // example_int_string();
+    example_int_int();
+    example_custom_ints();
 
     
-    #ifdef SET_DEBUG_ENABLE
-        printf("Debug enabled! Printing set:\n");
-        set_print(str_set, print_string);
-        set_print(int_set, print_int);
-        set_print(setA, print_int);
-        set_print(setB, print_int);
-        set_print(union_set, print_int);
-        set_print(inter_set, print_int);
-        set_print(diff_set, print_int);
+    #ifdef HASH_TABLE_DEBUG
+        
 
     #endif
 
-    set_destroy(int_set);
-    set_destroy(str_set);
-    set_destroy(setA);
-    set_destroy(setB);
-    set_destroy(union_set);
-    set_destroy(inter_set);
-    set_destroy(diff_set);
-
-
-    printf("Hello world!");
     return EXIT_SUCCESS;
 }
