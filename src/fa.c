@@ -5,6 +5,7 @@
 #include "../include/regex/regexpr.h"
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #define FA_STACK_DEFAULT_CAPACITY 16
 
 
@@ -196,7 +197,7 @@ fa_auto* fa_auto_from_regex(const char* regex){
             fa_stack_push(stack, automaton);
 
         }else if (postfix[i] == '?') {
-            fa_auto* automaton = fa_stack_pop(&stack);
+            fa_auto* automaton = fa_stack_pop(stack);
             for (int k = 0; k < automaton->nstates; k++) {
                 for (int j = 0; j < automaton->nstates; j++) {
                     if (automaton->states[k]->is_start) {
@@ -242,9 +243,82 @@ fa_auto* fa_auto_from_regex(const char* regex){
 
 
 fa_auto* fa_auto_read(const char *filepath){
-    
+
 }
 
+int fa_trans_exists(fa_state *from, fa_state *to, const char *symbol){
+    fa_trans *t = from->trans;
+    while (t) {
+        if (t->dest == to && strcmp(t->symbol, symbol) == 0) {
+            return 1;
+        }
+        t = t->next;
+    }
+    return 0;
+}
+
+
+fa_state** fa_auto_get_trans_states(const fa_auto* automaton, const char* symbol){
+    if (!automaton || !automaton->states || !symbol || automaton->nstates == 0) {
+        return NULL;
+    }
+
+
+    fa_state** matching_states = malloc(sizeof(fa_state*) * automaton->nstates);
+    if (!matching_states) {
+        return NULL;
+    }
+
+    int count = 0;
+    for (int i = 0; i < automaton->nstates; i++) {
+        fa_state* current_state = automaton->states[i];
+        if (!current_state) continue;
+        fa_trans* transition = current_state->trans;
+
+
+
+        while (transition != NULL) {
+            if (strcmp(transition->symbol, symbol) == 0) {
+                matching_states[count++] = current_state;
+                break;
+            }
+            transition = transition->next;
+        }
+    }
+
+    matching_states[count] = NULL;
+
+    // State** resized_matching_states = realloc(matching_states, sizeof(State*) * (count + 1));
+    // if (!resized_matching_states && count > 0) {
+    //     log_message(ERROR, "Failed to resize array of states. Returning original result of matched set.\n");
+    //     return matching_states;
+    // }
+    return matching_states;
+}
+
+int fa_auto_has_trans(const fa_auto* automaton, const fa_state* src, 
+                      const char* symbol, const fa_state* dest){
+
+    int added = 0;
+
+    for (int i = 0; i < automaton->nstates; i++) {
+        fa_state* current_state = automaton->states[i];
+        fa_trans* transition = current_state->trans;
+
+        while (transition) {
+            fa_state* previous_state = transition->src;
+            fa_state* destination_state = transition->dest;
+            if (strcmp(transition->symbol, symbol) == 0 && strcmp(previous_state->label, src->label) == 0 && strcmp(destination_state->label, dest->label) == 0) {
+                added = 1;
+                break;
+            }
+            transition = transition->next;
+        }
+    }
+
+    return added;
+
+}
 
 // Automaton Operations
 fa_auto* fa_auto_concat(const fa_auto* a1, const fa_auto* a2){
@@ -270,7 +344,7 @@ fa_auto* fa_auto_concat(const fa_auto* a1, const fa_auto* a2){
         while (transition) {
             for (int j = 0; j < a1->nstates; j++) {
                 if (strcmp(automaton->states[j]->label, transition->dest->label) == 0) {
-                    add_transition(automaton->states[i], transition->symbol, automaton->states[j]);
+                    fa_trans_create(automaton->states[i], automaton->states[j], transition->symbol);
                 }
             }
 
@@ -286,7 +360,7 @@ fa_auto* fa_auto_concat(const fa_auto* a1, const fa_auto* a2){
 
             for (int j = 0; j < a2->nstates; j++) {
                 if (strcmp(automaton->states[last_idx + j]->label, transition->dest->label) == 0) {
-                    add_transition(automaton->states[last_idx + i], transition->symbol, automaton->states[last_idx + j]);
+                    fa_trans_create(automaton->states[last_idx + i], automaton->states[last_idx + j], transition->symbol);
                 }
             }
             transition = transition->next;
@@ -323,8 +397,8 @@ void fa_auto_rename_states(const fa_auto* automaton){
     for (int i = 0; i < automaton->nstates; i++) {
         fa_trans* transition = automaton->states[i]->trans;
         while (transition) {
-            const int dest_index = get_state_index(automaton, transition->dest);
-            const int source_index = get_state_index(automaton, transition->src);
+            const int dest_index = fa_state_index(automaton, transition->dest);
+            const int source_index = fa_state_index(automaton, transition->src);
             if (dest_index != -1 && source_index != -1) {
                 transition->src = automaton->states[source_index];
                 transition->dest = automaton->states[dest_index];
@@ -370,7 +444,7 @@ fa_auto* fa_auto_product(const fa_auto* a1, const fa_auto* a2){
             int is_starting_state = (a1->states[i]->is_start && a2->states[j]->is_start);
             int is_ending_state = (a1->states[i]->is_accept && a2->states[j]->is_accept);
 
-            state_automaton[i][j] = init_state(name_state, is_starting_state, is_ending_state);
+            state_automaton[i][j] = fa_state_create(name_state, is_starting_state, is_ending_state);
             automaton->states[i * a2->nstates + j] = state_automaton[i][j];
         }
     }
@@ -458,7 +532,7 @@ fa_auto* fa_auto_union(const fa_auto* a1, const fa_auto* a2){
         while (transition) {
             for (int j = 0; j < a1->nstates; j++) {
                 if (strcmp(automaton->states[j]->label, transition->dest->label) == 0) {
-                    add_transition(automaton->states[i], transition->symbol, automaton->states[j]);
+                    fa_trans_create(automaton->states[i], automaton->states[j], transition->symbol);
                 }
             }
             transition = transition->next;
@@ -480,7 +554,7 @@ fa_auto* fa_auto_union(const fa_auto* a1, const fa_auto* a2){
         while (transition) {
             for (int j = 0; j < a2->nstates; j++) {
                 if (strcmp(automaton->states[last_idx + j]->label, transition->dest->label) == 0) {
-                    add_transition(automaton->states[last_idx + i], transition->symbol, automaton->states[last_idx + j]);
+                    fa_trans_create(automaton->states[last_idx + i], automaton->states[last_idx + j], transition->symbol);
                 }
             }
             transition = transition->next;
@@ -521,7 +595,7 @@ fa_auto* fa_auto_kleene(fa_auto* automaton, int variant){
 
     if (variant == 0) {
         const int offset = 2;
-        new_aut = init_automaton(automaton->nstates + offset);
+        new_aut = fa_auto_create(automaton->nstates + offset);
         new_aut->alphabet = automaton->alphabet;
 
         fa_state *new_origin = fa_state_create("S", true, false);
@@ -537,7 +611,7 @@ fa_auto* fa_auto_kleene(fa_auto* automaton, int variant){
         for (int i = 0; i < automaton->nstates; i++) {
             for (int j = 0; j < automaton->nstates; j++) {
                 if (automaton->states[i]->is_start && automaton->states[j]->is_accept) {
-                    add_transition(automaton->states[j], "eps", automaton->states[i]);
+                    fa_trans_create(automaton->states[j], automaton->states[i], "eps");
                 }
             }
         }
@@ -564,7 +638,7 @@ fa_auto* fa_auto_kleene(fa_auto* automaton, int variant){
 
 
     }else {
-        new_aut = init_automaton(automaton->nstates);
+        new_aut = fa_auto_create(automaton->nstates);
         new_aut->alphabet = automaton->alphabet;
         for (int i = 0; i < automaton->nstates; i++) {
             new_aut->states[i] = automaton->states[i];
@@ -746,7 +820,7 @@ static fa_auto* generate_minimized_DFA(const fa_auto* automaton, int final_parti
 
     for (int j = 0; j < automaton->nstates; j++) {
         fa_state* current_state = automaton->states[j];
-        int current_state_group = final_partition[get_state_index(automaton, current_state)];
+        int current_state_group = final_partition[fa_state_index(automaton, current_state)];
         if (!exists_in_array(groups, automaton->nstates, current_state_group)) {
             char* name;
             snprintf(name, sizeof(name), "q%d", state_idx);
@@ -785,8 +859,8 @@ static fa_auto* generate_minimized_DFA(const fa_auto* automaton, int final_parti
 
                     if (min_dfa_prev_state && min_dfa_dest_state) {
                         //only add unique transitions
-                        if (!is_transition_added( minimized_dfa, min_dfa_prev_state, transition->symbol, min_dfa_dest_state)) {
-                            add_transition(min_dfa_prev_state, transition->symbol, min_dfa_dest_state);
+                        if (!fa_auto_has_trans( minimized_dfa, min_dfa_prev_state, transition->symbol, min_dfa_dest_state)) {
+                            fa_trans_create(min_dfa_prev_state, min_dfa_dest_state, transition->symbol);
                         }
 
                     }
@@ -895,6 +969,20 @@ fa_auto* fa_auto_minimize_moore(const fa_auto *automaton){
 }
 
 
+
+void fa_auto_destroy(fa_auto* a){
+    for (int i = 0; i < a->nstates; i++) {
+        fa_trans* current = a->states[i]->trans;
+        while (current) {
+            fa_trans* next = current->next;
+            free(current);
+            current = next;
+        }
+        free(a->states[i]);
+    }
+    free(a->states);
+    free(a);
+}
 // Stack Operations
 
 fa_stack* fa_stack_create(int initial_capacity) {
@@ -922,7 +1010,7 @@ bool fa_stack_init(fa_stack *stack, int initial_capacity) {
 }
 
 bool fa_stack_push(fa_stack *stack, fa_auto *automaton) {
-    if (!stack || !automaton) return;
+    if (!stack || !automaton) return false;
     if (stack->top + 1 >= stack->capacity) {
         int new_capacity = stack->capacity * 2;
         fa_auto **new_items = realloc(stack->items, 

@@ -5,17 +5,17 @@
 #include "../../include/common.h"
 
 
-Set* set_create(size_t element_size, CompareFunction compare, HashFunction hash) {
+Set* set_create(size_t element_size, SetCompareFunction compare, SetHashFunction hash) {
     return set_create_with_functions(element_size, compare, hash, 
                                      copy_pointer, free_pointer);
 }
 
 
 Set* set_create_with_functions(size_t element_size,
-                               CompareFunction compare,
-                               HashFunction hash,
-                               CopyFunction copy,
-                               FreeFunction free) {
+                               SetCompareFunction compare,
+                               SetHashFunction hash,
+                               SetCopyFunction copy,
+                               SetFreeFunction free) {
     if (element_size == 0 || !compare || !hash) {
         return NULL;
     }
@@ -483,7 +483,7 @@ void** set_to_array(const Set* set, size_t* size) {
     return array;
 }
 
-void free_set_array(void** array, size_t size, FreeFunction free_func) {
+void free_set_array(void** array, size_t size, SetFreeFunction free_func) {
     if (!array) return;
     
     for (size_t i = 0; i < size; i++) {

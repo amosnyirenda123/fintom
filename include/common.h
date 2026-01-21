@@ -27,5 +27,7 @@ void free_string(void* str);
 void free_int(void* num);
 void free_pointer(void* a);
 
+int exists_in_array(const int arr[], const int size, int const value);
+
 
 #endif // COMMON_H

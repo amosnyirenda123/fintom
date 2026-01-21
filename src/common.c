@@ -137,6 +137,15 @@ void free_pointer(void* a) {
 }
 
 
+int exists_in_array(const int arr[], const int size, int const value) {
+    for (int i = 0; i < size; i++) {
+        if (arr[i] == value) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 
 
 

@@ -5,31 +5,31 @@
 #include <stddef.h>
 
 // Function pointer types for type-specific operations
-typedef size_t (*HashFunction)(const void*);
-typedef bool (*CompareFunction)(const void*, const void*);
-typedef void* (*CopyFunction)(const void*);
-typedef void (*FreeFunction)(void*);
+typedef size_t (*SetHashFunction)(const void*);
+typedef bool (*SetCompareFunction)(const void*, const void*);
+typedef void* (*SetCopyFunction)(const void*);
+typedef void (*SetFreeFunction)(void*);
 
 typedef struct {
     void** members;           // Array of void pointers to elements
     size_t length;           // Current number of elements
     size_t capacity;         // Allocated capacity
     size_t element_size;     // Size of each element in bytes
-    CompareFunction compare; // Function to compare two elements
-    HashFunction hash;       // Function to hash an element 
-    CopyFunction copy;       // Function to copy an element 
-    FreeFunction free;       // Function to free an element 
+    SetCompareFunction compare; // Function to compare two elements
+    SetHashFunction hash;       // Function to hash an element 
+    SetCopyFunction copy;       // Function to copy an element 
+    SetFreeFunction free;       // Function to free an element 
 } Set;
 
 // Basic set operations
 Set* set_create(size_t element_size, 
-                CompareFunction compare,
-                HashFunction hash);
+                SetCompareFunction compare,
+                SetHashFunction hash);
 Set* set_create_with_functions(size_t element_size,
-                              CompareFunction compare,
-                              HashFunction hash,
-                              CopyFunction copy,
-                              FreeFunction free);
+                              SetCompareFunction compare,
+                              SetHashFunction hash,
+                              SetCopyFunction copy,
+                              SetFreeFunction free);
 void set_destroy(Set* set);
 void set_clear(Set* set);
 
@@ -88,7 +88,7 @@ void print_pointer(const void* element);
 
 // Array conversion functions
 void** set_to_array(const Set* set, size_t* size);
-void free_set_array(void** array, size_t size, FreeFunction free_func);
+void free_set_array(void** array, size_t size, SetFreeFunction free_func);
 
 #endif // SET_DEBUG_ENABLE
 

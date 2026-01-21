@@ -19,4 +19,6 @@ add_executable(maintool
     src/common.c
     src/set/set.c
     src/hash/hash_table.c
+    src/regex/regexpr.c
+    src/fa.c
 )

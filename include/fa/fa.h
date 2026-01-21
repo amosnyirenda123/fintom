@@ -11,7 +11,7 @@ extern "C" {
 
 typedef struct fa_state fa_state;
 typedef struct fa_trans fa_trans;
-typedef struct fa_automaton;
+typedef struct fa_auto fa_auto;
 
 
 /**
@@ -273,12 +273,12 @@ int fa_trans_exists(fa_state *from, fa_state *to, const char *symbol);
 /**
  * @brief Checks if a specific transition has been added to an automaton.
  * @param automaton The automaton
- * @param origin Source state
+ * @param src Source state
  * @param symbol Transition symbol
  * @param dest Destination state
  * @return Non-zero if transition is already present, 0 otherwise
  */
-int fa_auto_has_trans(const fa_auto* automaton, const fa_state* origin, 
+int fa_auto_has_trans(const fa_auto* automaton, const fa_state* src, 
                       const char* symbol, const fa_state* dest);
 
 /**
@@ -290,14 +290,7 @@ int fa_auto_has_trans(const fa_auto* automaton, const fa_state* origin,
  */
 int fa_state_contains(fa_state **states, int size, fa_state *state);
 
-/**
- * @brief Finds the index of a state by its label.
- * @param states Array of states
- * @param nstates Number of states in array
- * @param label Label to search for
- * @return Index of the state, or -1 if not found
- */
-int fa_state_find_index(fa_state** states, int nstates, const char* label);
+
 
 /**
  * @brief Gets all states that have outgoing transitions on a given symbol.
@@ -333,6 +326,8 @@ void fa_auto_print(const fa_auto* automaton);
 void fa_auto_to_file(const fa_auto* automaton, const char* filename);
 
 
+
+void fa_auto_destroy(fa_auto* a);
 
 
 // ============================================================================
