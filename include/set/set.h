@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 
 // Function pointer types for type-specific operations
 typedef size_t (*SetHashFunction)(const void*);
@@ -69,28 +70,29 @@ Set* set_copy(const Set* set);
 bool set_reserve(Set* set, size_t capacity);
 double set_load_factor(const Set* set);
 
-// Predefined functions for common types
 
 
 
-#ifdef SET_DEBUG_ENABLE
-// Debug/print functions, only included if SET_DEBUG_ENABLE is defined
 typedef void (*PrintFunction)(const void*);
+typedef void (*FprintFunction)(const void*, FILE* file);
 
-// Debug print function
 void set_print(const Set* set, PrintFunction print_func);
+void set_fprint(const Set* set, FprintFunction fprint_func, FILE* file);
 
-// Example print functions for common types
 void print_int(const void* element);
 void print_double(const void* element);
 void print_string(const void* element);
 void print_pointer(const void* element);
+void fprint_int(const void* element, FILE* file);
+void fprint_double(const void* element, FILE* file);
+void fprint_string(const void* element, FILE* file);
+void fprint_pointer(const void* element, FILE* file);
 
-// Array conversion functions
+
 void** set_to_array(const Set* set, size_t* size);
 void free_set_array(void** array, size_t size, SetFreeFunction free_func);
 
-#endif // SET_DEBUG_ENABLE
+
 
 
 #endif // SET_H

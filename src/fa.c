@@ -320,6 +320,359 @@ int fa_auto_has_trans(const fa_auto* automaton, const fa_state* src,
 
 }
 
+
+static char* fa_auto_escape_dot_label(const char* label) {
+    if (label == NULL) {
+        return strdup("NULL");
+    }
+    
+    // Calculate required buffer size
+    size_t len = strlen(label);
+    size_t escaped_len = 0;
+    
+    // First pass: count special characters
+    for (size_t i = 0; i < len; i++) {
+        if (label[i] == '\"' || label[i] == '\\') {
+            escaped_len += 2;  // Need to escape it
+        } else {
+            escaped_len += 1;
+        }
+    }
+    
+    // Allocate buffer
+    char* escaped = malloc(escaped_len + 1);
+    if (escaped == NULL) {
+        return NULL;
+    }
+    
+    // Second pass: copy and escape
+    size_t j = 0;
+    for (size_t i = 0; i < len; i++) {
+        if (label[i] == '\"' || label[i] == '\\') {
+            escaped[j++] = '\\';
+        }
+        escaped[j++] = label[i];
+    }
+    escaped[j] = '\0';
+    
+    return escaped;
+}
+
+int fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream){
+    if (automaton == NULL || stream == NULL) {
+        return -1;
+    }
+    
+    // Metadata
+    fprintf(stream, "digraph Automaton {\n");
+    fprintf(stream, "  // Automaton properties\n");
+    fprintf(stream, "  rankdir=LR;                // Left-to-right layout\n");
+    fprintf(stream, "  node [shape=circle];       // Default shape for states\n");
+    fprintf(stream, "  // Metadata\n");
+    fprintf(stream, "  label=\"States: %d, Alphabet size: %d\";\n",
+            automaton->nstates, automaton->alphabet->length);
+    fprintf(stream, "  labelloc=top;\n");
+    fprintf(stream, "  fontsize=12;\n\n");
+    
+    // Alphabet
+    fprintf(stream, "  // Alphabet: ");
+    set_fprint(automaton->alphabet, fprint_string, stream);
+    fprintf(stream, "\n\n");
+    
+    
+    fprintf(stream, "  // State declarations\n");
+    for (size_t i = 0; i < automaton->nstates; i++) {
+        fa_state* state = automaton->states[i];
+        
+        
+        const char* shape = "circle";
+        const char* style = "";
+        const char* fillcolor = "";
+        int peripheries = 1;
+        
+        if (state->is_start && state->is_accept) {
+            shape = "doublecircle";
+            style = "filled";
+            fillcolor = "lightyellow";
+        } else if (state->is_start) {
+            style = "filled";
+            fillcolor = "lightyellow";
+        } else if (state->is_accept) {
+            peripheries = 2;
+        }
+        
+        
+        char* escaped_label = fa_auto_escape_dot_label(state->label);
+        
+        // States
+        fprintf(stream, "  \"%s\" [", escaped_label);
+        
+        bool first_attr = true;
+        if (strcmp(shape, "circle") != 0) {
+            fprintf(stream, "shape=%s", shape);
+            first_attr = false;
+        }
+        
+        if (peripheries != 1) {
+            if (!first_attr) fprintf(stream, ", ");
+            fprintf(stream, "peripheries=%d", peripheries);
+            first_attr = false;
+        }
+        
+        if (style[0] != '\0') {
+            if (!first_attr) fprintf(stream, ", ");
+            fprintf(stream, "style=%s", style);
+            first_attr = false;
+        }
+        
+        if (fillcolor[0] != '\0') {
+            if (!first_attr) fprintf(stream, ", ");
+            fprintf(stream, "fillcolor=%s", fillcolor);
+            first_attr = false;
+        }
+        
+        
+        if (state->ntrans > 0) {
+            if (!first_attr) fprintf(stream, ", ");
+            fprintf(stream, "tooltip=\"%d transitions\"", state->ntrans);
+        }
+        
+        fprintf(stream, "];\n");
+        
+        free(escaped_label);
+    }
+    
+    fprintf(stream, "\n");
+    
+    // Transitions
+    fprintf(stream, "  // Transitions\n");
+    for (size_t i = 0; i < automaton->nstates; i++) {
+        fa_state* state = automaton->states[i];
+        fa_trans* trans = state->trans;
+        
+        char* src_escaped = fa_auto_escape_dot_label(state->label);
+        
+        while (trans != NULL) {
+            
+            char* dest_escaped = fa_auto_escape_dot_label(trans->dest->label);
+            
+            
+            char* symbol_escaped = fa_auto_escape_dot_label(trans->symbol);
+            
+            
+            fprintf(stream, "  \"%s\" -> \"%s\" [label=\"%s\"];\n",
+                    src_escaped, dest_escaped, symbol_escaped);
+            
+            free(dest_escaped);
+            free(symbol_escaped);
+            trans = trans->next;
+        }
+        
+        free(src_escaped);
+    }
+    
+    fprintf(stream, "}\n");
+    
+    return 0;
+}
+
+int fa_auto_export_dot_file(const fa_auto* automaton, const char* filename){
+    if (automaton == NULL || filename == NULL) {
+        return -1;  
+    }
+    
+    FILE* dot_file = fopen(filename, "w");
+    if (dot_file == NULL) {
+        return -2;  
+    }
+    
+    int result = fa_auto_export_dot_stream(automaton, dot_file);
+    fclose(dot_file);
+    
+    return result;
+}
+
+
+int fa_auto_export_json_file(const fa_auto* automaton, const char* filename) {
+    if (automaton == NULL || filename == NULL) {
+        return -1;  
+    }
+    
+    FILE* json_file = fopen(filename, "w");
+    if (json_file == NULL) {
+        return -2;  
+    }
+    
+    int result = fa_auto_export_json_stream(automaton, json_file);
+    fclose(json_file);
+    
+    return result;
+}
+
+
+static char* json_escape(const char* str) {
+    if (str == NULL) return strdup("null");
+        
+    size_t len = strlen(str);
+    size_t escaped_len = 0;
+        
+    // Count characters that need escaping
+    for (size_t i = 0; i < len; i++) {
+        switch (str[i]) {
+            case '\"': case '\\': case '\b': case '\f': 
+            case '\n': case '\r': case '\t':
+                escaped_len += 2;  // \ + escaped char
+                break;
+            default:
+                escaped_len += 1;
+                break;
+        }
+    }
+        
+    char* escaped = malloc(escaped_len + 1);
+    if (!escaped) return NULL;
+        
+    size_t j = 0;
+    for (size_t i = 0; i < len; i++) {
+        switch (str[i]) {
+            case '\"': escaped[j++] = '\\'; escaped[j++] = '\"'; break;
+            case '\\': escaped[j++] = '\\'; escaped[j++] = '\\'; break;
+            case '\b': escaped[j++] = '\\'; escaped[j++] = 'b'; break;
+            case '\f': escaped[j++] = '\\'; escaped[j++] = 'f'; break;
+            case '\n': escaped[j++] = '\\'; escaped[j++] = 'n'; break;
+            case '\r': escaped[j++] = '\\'; escaped[j++] = 'r'; break;
+            case '\t': escaped[j++] = '\\'; escaped[j++] = 't'; break;
+            default:   escaped[j++] = str[i]; break;
+        }
+    }
+    escaped[j] = '\0';
+    return escaped;
+}
+
+int fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
+    if (automaton == NULL || stream == NULL) {
+        return -1;
+    }
+    
+    // Helper to write comma except for first item
+    bool first_state = true;
+    bool first_transition = true;
+    
+    //JSON object
+    fprintf(stream, "{\n");
+    
+    // Metadata section
+    fprintf(stream, "  \"metadata\": {\n");
+    fprintf(stream, "    \"type\": \"finite_automaton\",\n");
+    fprintf(stream, "    \"state_count\": %d,\n", automaton->nstates);
+    fprintf(stream, "    \"alphabet_size\": %d,\n", automaton->alphabet->length);
+    
+    // Alphabet
+    fprintf(stream, "    \"alphabet\": [\n");
+    
+    set_fprint(automaton->alphabet, fprint_string, stream);
+    
+    fprintf(stream, "    ]\n");
+    fprintf(stream, "  },\n");
+    
+    // States section
+    fprintf(stream, "  \"states\": [\n");
+    
+    for (size_t i = 0; i < automaton->nstates; i++) {
+        fa_state* state = automaton->states[i];
+        
+        if (!first_state) {
+            fprintf(stream, ",\n");
+        }
+        first_state = false;
+        
+        char* label_escaped = json_escape(state->label);
+        
+        fprintf(stream, "    {\n");
+        fprintf(stream, "      \"id\": %zu,\n", i);
+        fprintf(stream, "      \"label\": \"%s\",\n", label_escaped);
+        fprintf(stream, "      \"is_start\": %s,\n", state->is_start ? "true" : "false");
+        fprintf(stream, "      \"is_accept\": %s,\n", state->is_accept ? "true" : "false");
+        fprintf(stream, "      \"transition_count\": %d,\n", state->ntrans);
+        
+        // Transitions for this state
+        fprintf(stream, "      \"transitions\": [\n");
+        
+        fa_trans* trans = state->trans;
+        first_transition = true;
+        
+        while (trans != NULL) {
+            if (!first_transition) {
+                fprintf(stream, ",\n");
+            }
+            first_transition = false;
+            
+            char* symbol_escaped = json_escape(trans->symbol);
+            char* dest_label_escaped = json_escape(trans->dest->label);
+            
+            // Find destination state index
+            int dest_index = -1;
+            for (size_t j = 0; j < automaton->nstates; j++) {
+                if (automaton->states[j] == trans->dest) {
+                    dest_index = j;
+                    break;
+                }
+            }
+            
+            fprintf(stream, "        {\n");
+            fprintf(stream, "          \"symbol\": \"%s\",\n", symbol_escaped);
+            fprintf(stream, "          \"destination\": {\n");
+            fprintf(stream, "            \"id\": %d,\n", dest_index);
+            fprintf(stream, "            \"label\": \"%s\"\n", dest_label_escaped);
+            fprintf(stream, "          }\n");
+            fprintf(stream, "        }");
+            
+            free(symbol_escaped);
+            free(dest_label_escaped);
+            trans = trans->next;
+        }
+        
+        fprintf(stream, "\n      ]\n");
+        fprintf(stream, "    }");
+        
+        free(label_escaped);
+    }
+    
+    fprintf(stream, "\n  ],\n");
+    
+    // Statistics section
+    fprintf(stream, "  \"statistics\": {\n");
+    
+    // Count start and accept states
+    int start_count = 0;
+    int accept_count = 0;
+    int total_transitions = 0;
+    
+    for (size_t i = 0; i < automaton->nstates; i++) {
+        fa_state* state = automaton->states[i];
+        if (state->is_start) start_count++;
+        if (state->is_accept) accept_count++;
+        total_transitions += state->ntrans;
+    }
+    
+    fprintf(stream, "    \"start_state_count\": %d,\n", start_count);
+    fprintf(stream, "    \"accept_state_count\": %d,\n", accept_count);
+    fprintf(stream, "    \"total_transitions\": %d,\n", total_transitions);
+    
+    // Calculate average transitions per state
+    double avg_transitions = automaton->nstates > 0 ? 
+                            (double)total_transitions / automaton->nstates : 0.0;
+    fprintf(stream, "    \"average_transitions_per_state\": %.2f\n", avg_transitions);
+    
+    fprintf(stream, "  }\n");
+    
+    // End JSON object
+    fprintf(stream, "}\n");
+    
+    return 0;
+}
+
+
 // Automaton Operations
 fa_auto* fa_auto_concat(const fa_auto* a1, const fa_auto* a2){
     if(!a1 || !a2) return NULL;

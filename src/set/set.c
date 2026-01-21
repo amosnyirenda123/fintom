@@ -1,7 +1,9 @@
 #include "../../include/set/set.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
 #include "../../include/common.h"
 
 
@@ -408,8 +410,29 @@ void set_iterator_reset(SetIterator* iter) {
 }
 
 
-#ifdef SET_DEBUG_ENABLE
-#include <stdio.h>
+
+void set_fprint(const Set* set, FprintFunction fprint_func, FILE* file){
+    if (!set || !file) {
+        fprintf(file, "(null)\n");
+        return;
+    }
+    
+    // fprintf(file, "{ ");
+    SetIterator iter = set_iterator_create((Set*)set);
+    bool first = true;
+    
+    while (set_iterator_has_next(&iter)) {
+        if (!first) fprintf(file, ", ");
+        void* element = set_iterator_next(&iter);
+        if (fprint_func) {
+            fprint_func(element, file);
+        } else {
+            fprintf(file, "%p", element);
+        }
+        first = false;
+    }
+    // fprintf(file," }\n");
+}
 
 void set_print(const Set* set, PrintFunction print_func) {
     if (!set) {
@@ -449,6 +472,25 @@ void print_string(const void* element) {
 
 void print_pointer(const void* element) {
     printf("%p", *(const void* const*)element);
+}
+
+
+
+void fprint_int(const void* element, FILE* file) {
+    fprintf(file, "%d", *(const int*)element);
+}
+
+void fprint_double(const void* element, FILE* file) {
+    fprintf(file, "%f", *(const double*)element);
+}
+
+void fprint_string(const void* element, FILE* file) {
+    const char* str = *(const char* const*)element;
+    fprintf(file,"\"%s\"", str ? str : "(null)");
+}
+
+void fprint_pointer(const void* element, FILE* file) {
+    fprintf(file, "%p", *(const void* const*)element);
 }
 
 void** set_to_array(const Set* set, size_t* size) {
@@ -496,4 +538,3 @@ void free_set_array(void** array, size_t size, SetFreeFunction free_func) {
     free(array);
 }
 
-#endif // SET_DEBUG_ENABLE

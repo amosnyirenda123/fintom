@@ -3,6 +3,7 @@
 #define FA_FA_H
 #include "../set/set.h"
 #include <stdbool.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -319,11 +320,42 @@ bool fa_auto_accepts(const fa_auto* automaton, const char* word);
 void fa_auto_print(const fa_auto* automaton);
 
 /**
- * @brief Generates a DOT file for visualization.
- * @param automaton The automaton to visualize
- * @param filename Output filename
+ * @brief Export automaton to DOT format and write to a file.
+ * 
+ * @param automaton The automaton to export
+ * @param filename The output filename
+ * @return 0 on success, non-zero on error
  */
-void fa_auto_to_file(const fa_auto* automaton, const char* filename);
+int fa_auto_export_dot_file(const fa_auto* automaton, const char* filename);
+
+/**
+ * @brief Export automaton to DOT format and write to a stream.
+ * 
+ * @param automaton The automaton to export
+ * @param stream The output stream
+ * @return 0 on success, non-zero on error
+ */
+int fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream);
+
+
+/**
+ * @brief Export automaton to JSON format and write to a file.
+ * 
+ * @param automaton The automaton to export
+ * @param filename The output filename
+ * @return 0 on success, non-zero on error
+ */
+int fa_auto_export_json_file(const fa_auto* automaton, const char* filename);
+
+
+/**
+ * @brief Export automaton to JSON format and write to a stream.
+ * 
+ * @param automaton The automaton to export
+ * @param stream The output stream
+ * @return 0 on success, non-zero on error
+ */
+int fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream);
 
 
 
