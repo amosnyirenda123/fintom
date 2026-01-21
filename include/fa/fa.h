@@ -94,6 +94,10 @@ fa_state* fa_state_create(const char* label, bool is_start, bool is_accept);
  */
 bool fa_trans_create(fa_state *src, fa_state *dest, const char* symbol);
 
+
+
+fa_state* fa_state_get_by_label(const fa_auto* automaton, const char* label);
+
 /**
  * @brief Finds a state in an automaton by its label.
  * @param automaton The automaton to search
@@ -126,11 +130,7 @@ fa_state* fa_state_with_max_trans(const fa_auto* automaton);
  */
 fa_state** fa_state_get_dests(fa_state* state, const char* symbol, int nstates);
 
-/**
- * @brief Frees an array of state pointers returned by fa_state_get_dests.
- * @param states Array to free
- */
-void fa_state_free_array(fa_state** states);
+
 
 // ============================================================================
 // Automaton Creation and Initialization
@@ -313,7 +313,7 @@ fa_state** fa_auto_get_trans_states(const fa_auto* automaton, const char* symbol
  * @param word Input word to process
  * @return Non-zero if word is accepted, 0 otherwise
  */
-int fa_auto_accept(const fa_auto* automaton, const char* word);
+bool fa_auto_accepts(const fa_auto* automaton, const char* word);
 
 // ============================================================================
 // Output and Debugging
@@ -359,7 +359,7 @@ bool fa_stack_init(fa_stack *stack, int initial_capacity);
  * @param stack The stack
  * @param automaton Automaton to push
  */
-void fa_stack_push(fa_stack *stack, fa_auto *automaton);
+bool fa_stack_push(fa_stack *stack, fa_auto *automaton);
 
 /**
  * @brief Pops an automaton from the stack.
