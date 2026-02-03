@@ -1,118 +1,129 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "include/hash/hash_table.h"
+#include "include/fa/fa.h"          // Core finite automaton structures & functions
+#include "include/set/set.h"        // Generic set implementation (used for alphabet)
+#include "include/io/fa_auto_io.h"  // Printing / I/O helpers for automata
+#include "include/fa_error.h"       // Error codes returned by FA functions
 #include "include/common.h"
-
-
-void example_string_int() {
-    printf("=== String -> Int Map Example ===\n");
-    
-    HashTable* table = hash_table_create_string_int(8);
-    
-    // Insert string->int pairs
-    char* keys[] = {"apples", "bananas", "cherries"};
-    int values[] = {5, 10, 15};
-    
-    for (int i = 0; i < 3; i++) {
-        hash_table_insert(table, &keys[i], &values[i]);
-    }
-    
-    // Retrieve values
-    char* key = "bananas";
-    int* result = hash_table_get(table, &key);
-    if (result) {
-        printf("Found '%s': %d\n", key, *result);
-    }
-    
-    hash_table_destroy(table);
-}
-
-void example_int_string() {
-    printf("\n=== Int -> String Map Example ===\n");
-    
-    HashTable* table = hash_table_create_int_string(8);
-    
-    // Insert int->string pairs
-    int keys[] = {100, 200, 300};
-    char* values[] = {"error", "warning", "info"};
-    
-    for (int i = 0; i < 3; i++) {
-        hash_table_insert(table, &keys[i], &values[i]);
-    }
-    
-    // Retrieve values
-    int key = 200;
-    char** result = hash_table_get(table, &key);
-    if (result) {
-        printf("Found %d: '%s'\n", key, *result);
-    }
-    
-    hash_table_destroy(table);
-}
-
-void example_int_int() {
-    printf("\n=== Int -> Int Map Example ===\n");
-    
-    HashTable* table = hash_table_create_int_int(8);
-    
-    // Insert int->int pairs (e.g., ID -> age)
-    int keys[] = {1, 2, 3};
-    int values[] = {25, 30, 35};
-    
-    for (int i = 0; i < 3; i++) {
-        hash_table_insert(table, &keys[i], &values[i]);
-    }
-    
-    // Update a value
-    int key = 2;
-    int new_age = 31;
-    hash_table_insert(table, &key, &new_age);  // Will update existing
-    
-    // Check all entries
-    HashTableIterator iter = hash_table_iterator_create(table);
-    int k, v;
-    while (hash_table_iterator_next(&iter, &k, &v)) {
-        printf("ID %d -> Age %d\n", k, v);
-    }
-    
-    hash_table_destroy(table);
-}
-
-// Example with custom integer keys
-void example_custom_ints() {
-    printf("\n=== Custom Integer Usage ===\n");
-    
-    // Using the int comparison and copy functions directly
-    int a = 42;
-    int b = 42;
-    int c = 100;
-    
-    printf("compare_ints(&a, &b): %s\n", 
-           compare_ints(&a, &b) ? "true" : "false");  // true
-    
-    printf("compare_ints(&a, &c): %s\n", 
-           compare_ints(&a, &c) ? "true" : "false");  // false
-    
-    // Test copy function
-    int* copy = copy_int(&a);
-    printf("Copied value: %d\n", *copy);  // 42
-    free_int(copy);
-}
-
+#include "include/fa/fa_debug.h"
 
 int main()
 {
+    /* -----------------------------
+       1. Define basic automaton size
+       ----------------------------- */
 
-    //example_string_int();
-    // example_int_string();
-    example_int_int();
-    example_custom_ints();
+    const int num_states = 4;   // We will create an automaton with 4 states
+
+    /* -----------------------------
+       2. Define the alphabet symbols
+       ----------------------------- */
+
+    // List of input symbols the automaton understands
+    const char* symbols[] = {"a", "b", "c", "d", "e"};
+
+    // Compute number of symbols automatically
+    const int nsymbols = sizeof(symbols) / sizeof(symbols[0]);
+
+    // Create a set that will store strings (our alphabet container)
+    Set* alphabet = set_create_string_set();
+
+    // Insert all symbols into the alphabet set
+    // Returns number of successfully inserted symbols
+    size_t count = fa_alphabet_insert_symbols(alphabet, symbols, nsymbols);
 
     
-    #ifdef HASH_TABLE_DEBUG
+
+    /* -----------------------------
+       3. Create states
+       fa_state_create(label, is_start, is_accepting)
+       ----------------------------- */
+
+    fa_state* q0 = fa_state_create("q0", 1, 1); // Start state AND accepting
+    fa_state* q1 = fa_state_create("q1", 1, 0); // Start state (if NFA), not accepting
+    fa_state* q2 = fa_state_create("q2", 0, 1); // Accepting state
+    fa_state* q3 = fa_state_create("q3", 0, 1); // Accepting state
+
+    /* -----------------------------
+       4. Create automaton container
+       ----------------------------- */
+
+    // Allocate automaton structure with space for 4 states
+    fa_auto* automaton = fa_auto_create(num_states);
+
+    // Attach alphabet to automaton
+    automaton->alphabet = alphabet;
+
+    // Register states inside the automaton
+    automaton->states[0] = q0;
+    automaton->states[1] = q1;
+    automaton->states[2] = q2;
+    automaton->states[3] = q3;
+
+    
+
+    /* -----------------------------
+       5. Define transitions (data only)
+       These are NOT yet inside the automaton
+       ----------------------------- */
+
+    fa_trans transitions[] = {
+        {.src = q0, .dest = q0, .symbol = "a", .next = NULL}, // q0 --a--> q0 (self-loop)
+        {.src = q0, .dest = q1, .symbol = "e", .next = NULL}, // q0 --e--> q1
+        {.src = q0, .dest = q2, .symbol = "b", .next = NULL}, // q0 --b--> q2
+        {.src = q0, .dest = q3, .symbol = "c", .next = NULL}, // q0 --c--> q3
+        {.src = q1, .dest = q2, .symbol = "d", .next = NULL}, // q1 --d--> q2
+        {.src = q2, .dest = q3, .symbol = "c", .next = NULL}, // q2 --c--> q3
+        {.src = q3, .dest = q2, .symbol = "e", .next = NULL}, // q3 --e--> q2
+        {.src = q3, .dest = q3, .symbol = "a", .next = NULL}  // q3 --a--> q3 (self-loop)
+    };
+
+    // Number of transitions in the array
+    size_t num_transitions = sizeof(transitions) / sizeof(transitions[0]);
+
+    /* -----------------------------
+       6. Insert transitions into FA
+       with validation
+       ----------------------------- */
+    
+    for (size_t i = 0; i < num_transitions; i++) {
+
+        // Try to create and attach transition to the automaton
+        // Validation checks typically include:
+        // - symbol exists in alphabet
+        // - states belong to this automaton
+        fa_error_t err = fa_trans_create_validated(
+                            automaton,
+                            transitions[i].src,
+                            transitions[i].dest,
+                            transitions[i].symbol);
+
         
+        
+        // If something went wrong, print a readable error
+        if (err != FA_SUCCESS) {
 
-    #endif
+            fprintf(stderr, "Transition %s->%s ('%s') failed: %s\n",
+                    transitions[i].src->label,
+                    transitions[i].dest->label,
+                    transitions[i].symbol,
+                    fa_error_str(err));
 
-    return EXIT_SUCCESS;
+            
+        }
+    }
+
+    fa_auto_print_verbose(automaton);
+
+    /* -----------------------------
+       7. Print the resulting automaton
+       ----------------------------- */
+
+    // Print full automaton structure using a function that knows
+    // how to print symbols stored as strings
+    // fa_auto_print_verbose(automaton, print_string);
+
+    // Destroy automaton
+    fa_auto_destroy(automaton);
+    printf("Destroyed Automaton\n");
 }

@@ -26,6 +26,9 @@ typedef struct {
 Set* set_create(size_t element_size, 
                 SetCompareFunction compare,
                 SetHashFunction hash);
+
+Set* set_create_string_set();
+Set* set_create_int_set();                
 Set* set_create_with_functions(size_t element_size,
                               SetCompareFunction compare,
                               SetHashFunction hash,

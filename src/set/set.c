@@ -12,6 +12,14 @@ Set* set_create(size_t element_size, SetCompareFunction compare, SetHashFunction
                                      copy_pointer, free_pointer);
 }
 
+Set* set_create_string_set(){
+    return set_create(sizeof(char*), compare_strings, hash_string);
+}
+
+Set* set_create_int_set(){
+    return set_create(sizeof(int), compare_ints, hash_int);
+}
+
 
 Set* set_create_with_functions(size_t element_size,
                                SetCompareFunction compare,

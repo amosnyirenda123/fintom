@@ -2,6 +2,7 @@
 #ifndef FA_FA_H
 #define FA_FA_H
 #include "../set/set.h"
+#include "../fa_error.h"
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -72,6 +73,22 @@ typedef struct fa_auto {
 } fa_auto;
 
 
+// ============================================================================
+// Automaton Alphabet operations
+// ============================================================================
+
+/**
+ * Adds valid alphabet symbols to a finite automaton's alphabet set.
+ * Skips NULL pointers and empty strings, as neither are valid alphabet symbols.
+ * 
+ * @param alphabet Set to store alphabet symbols
+ * @param symbols Array of string pointers representing potential symbols
+ * @param count Number of elements in the symbols array
+ * @return Number of valid symbols successfully added to the alphabet
+ */
+
+size_t fa_alphabet_insert_symbols(Set* alphabet, const char* symbols[], size_t count);
+
 
 // ============================================================================
 // State and Transition Operations
@@ -94,8 +111,12 @@ fa_state* fa_state_create(const char* label, bool is_start, bool is_accept);
  * @return true if transition was created successfully, false otherwise
  */
 bool fa_trans_create(fa_state *src, fa_state *dest, const char* symbol);
+fa_error_t fa_trans_create_validated(const fa_auto *automaton, fa_state *src, 
+                               fa_state *dest, const char* symbol);
 
 
+bool fa_trans_create_epsilon(fa_state *src, fa_state *dest);
+fa_error_t fa_trans_create_epsilon_validated(const fa_auto *automaton, fa_state *src, fa_state *dest);
 
 fa_state* fa_state_get_by_label(const fa_auto* automaton, const char* label);
 
@@ -269,7 +290,7 @@ fa_auto* fa_auto_minimize_moore(const fa_auto *automaton);
  * @param symbol Transition symbol
  * @return Non-zero if transition exists, 0 otherwise
  */
-int fa_trans_exists(fa_state *from, fa_state *to, const char *symbol);
+bool fa_trans_exists(fa_state *from, fa_state *to, const char *symbol);
 
 /**
  * @brief Checks if a specific transition has been added to an automaton.
@@ -313,52 +334,10 @@ bool fa_auto_accepts(const fa_auto* automaton, const char* word);
 // Output and Debugging
 // ============================================================================
 
-/**
- * @brief Prints a human-readable representation of the automaton.
- * @param automaton The automaton to print
- */
-void fa_auto_print(const fa_auto* automaton);
-
-/**
- * @brief Export automaton to DOT format and write to a file.
- * 
- * @param automaton The automaton to export
- * @param filename The output filename
- * @return 0 on success, non-zero on error
- */
-int fa_auto_export_dot_file(const fa_auto* automaton, const char* filename);
-
-/**
- * @brief Export automaton to DOT format and write to a stream.
- * 
- * @param automaton The automaton to export
- * @param stream The output stream
- * @return 0 on success, non-zero on error
- */
-int fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream);
-
-
-/**
- * @brief Export automaton to JSON format and write to a file.
- * 
- * @param automaton The automaton to export
- * @param filename The output filename
- * @return 0 on success, non-zero on error
- */
-int fa_auto_export_json_file(const fa_auto* automaton, const char* filename);
-
-
-/**
- * @brief Export automaton to JSON format and write to a stream.
- * 
- * @param automaton The automaton to export
- * @param stream The output stream
- * @return 0 on success, non-zero on error
- */
-int fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream);
 
 
 
+void fa_state_destroy(fa_state* s);
 void fa_auto_destroy(fa_auto* a);
 
 

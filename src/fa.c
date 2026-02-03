@@ -7,6 +7,22 @@
 #include <string.h>
 #include <ctype.h>
 #define FA_STACK_DEFAULT_CAPACITY 16
+#define FA_EPS_SYMBOL "eps"
+
+
+size_t fa_alphabet_insert_symbols(Set* alphabet, const char* symbols[], size_t count){
+    if(!alphabet || !symbols || count == 0) return 0;
+
+    size_t inserted_count = 0;
+
+    for (size_t i = 0; i < count; i++) {
+        if(symbols[i] == NULL) continue;
+        if(symbols[i][0] == '\0') continue;
+        if(set_insert(alphabet, &symbols[i])) inserted_count++;     
+    }
+
+    return inserted_count;
+}
 
 
 fa_state* fa_state_create(const char* label, bool is_start, bool is_accept){
@@ -16,7 +32,7 @@ fa_state* fa_state_create(const char* label, bool is_start, bool is_accept){
 
     if(!state) return NULL;
 
-    strcpy(state->label, label);
+    state->label = strdup(label);
 
     state->is_start = is_start;
     state->is_accept = is_accept;
@@ -34,6 +50,7 @@ bool fa_trans_create(fa_state *src, fa_state *dest, const char* symbol){
 
     if(!new_trans) return false;
 
+    
     strcpy(new_trans->symbol, symbol);
 
     new_trans->dest = dest;
@@ -43,6 +60,68 @@ bool fa_trans_create(fa_state *src, fa_state *dest, const char* symbol){
     //Insert at beginning
     src->trans = new_trans;
     src->ntrans++;
+}
+
+fa_error_t fa_trans_create_validated(const fa_auto *automaton, fa_state *src, 
+                               fa_state *dest, const char* symbol){
+    
+    if(!automaton || !src || !dest || !symbol) return FA_ERR_NULL_ARGUMENT;
+    
+    
+
+    // if(!set_contains(automaton->alphabet, (void*)symbol)){
+    //     return FA_ERR_FA_INVALID_SYMBOL;
+    // }
+    
+
+    bool src_found = false, dest_found = false;
+    for (size_t i = 0; i < automaton->nstates; i++) {
+        if (automaton->states[i] == src) src_found = true;
+        if (automaton->states[i] == dest) dest_found = true;
+        if (src_found && dest_found) break;
+    }
+
+    
+
+    if (!src_found || !dest_found) return FA_ERR_FA_STATE_NOT_FOUND;
+
+    if (fa_trans_exists(src, dest, symbol)) {
+        return FA_ERR_FA_DUPLICATE_TRANSITION;
+    }
+
+    
+
+    fa_trans* new_trans = (fa_trans*)malloc(sizeof(fa_trans));
+
+    if (!new_trans) {
+        return FA_ERR_OUT_OF_MEMORY;
+    }
+
+    new_trans->symbol = strdup(symbol);
+    if (!new_trans->symbol) {
+        free(new_trans);
+        return FA_ERR_OUT_OF_MEMORY;
+    }
+
+    
+
+    new_trans->dest = dest;
+    new_trans->src = src;
+    new_trans->next = src->trans;
+    //Insert at beginning
+    src->trans = new_trans;
+    src->ntrans++;
+
+    return FA_SUCCESS;
+    
+}
+
+
+bool fa_trans_create_epsilon(fa_state *src, fa_state *dest){
+    return fa_trans_create(src, dest, FA_EPS_SYMBOL);
+}
+fa_error_t fa_trans_create_epsilon_validated(const fa_auto *automaton, fa_state *src, fa_state *dest){
+    return fa_trans_create_validated(automaton, src, dest, FA_EPS_SYMBOL);
 }
 
 
@@ -245,11 +324,10 @@ fa_auto* fa_auto_from_regex(const char* regex){
 fa_auto* fa_auto_read(const char *filepath){
 
 }
-
-int fa_trans_exists(fa_state *from, fa_state *to, const char *symbol){
+bool fa_trans_exists(fa_state *from, fa_state *to, const char *symbol){
     fa_trans *t = from->trans;
     while (t) {
-        if (t->dest == to && strcmp(t->symbol, symbol) == 0) {
+        if (strcmp(t->dest->label, to->label) == 0 && strcmp(t->symbol, symbol) == 0) {
             return 1;
         }
         t = t->next;
@@ -318,358 +396,6 @@ int fa_auto_has_trans(const fa_auto* automaton, const fa_state* src,
 
     return added;
 
-}
-
-
-static char* fa_auto_escape_dot_label(const char* label) {
-    if (label == NULL) {
-        return strdup("NULL");
-    }
-    
-    // Calculate required buffer size
-    size_t len = strlen(label);
-    size_t escaped_len = 0;
-    
-    // First pass: count special characters
-    for (size_t i = 0; i < len; i++) {
-        if (label[i] == '\"' || label[i] == '\\') {
-            escaped_len += 2;  // Need to escape it
-        } else {
-            escaped_len += 1;
-        }
-    }
-    
-    // Allocate buffer
-    char* escaped = malloc(escaped_len + 1);
-    if (escaped == NULL) {
-        return NULL;
-    }
-    
-    // Second pass: copy and escape
-    size_t j = 0;
-    for (size_t i = 0; i < len; i++) {
-        if (label[i] == '\"' || label[i] == '\\') {
-            escaped[j++] = '\\';
-        }
-        escaped[j++] = label[i];
-    }
-    escaped[j] = '\0';
-    
-    return escaped;
-}
-
-int fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream){
-    if (automaton == NULL || stream == NULL) {
-        return -1;
-    }
-    
-    // Metadata
-    fprintf(stream, "digraph Automaton {\n");
-    fprintf(stream, "  // Automaton properties\n");
-    fprintf(stream, "  rankdir=LR;                // Left-to-right layout\n");
-    fprintf(stream, "  node [shape=circle];       // Default shape for states\n");
-    fprintf(stream, "  // Metadata\n");
-    fprintf(stream, "  label=\"States: %d, Alphabet size: %d\";\n",
-            automaton->nstates, automaton->alphabet->length);
-    fprintf(stream, "  labelloc=top;\n");
-    fprintf(stream, "  fontsize=12;\n\n");
-    
-    // Alphabet
-    fprintf(stream, "  // Alphabet: ");
-    set_fprint(automaton->alphabet, fprint_string, stream);
-    fprintf(stream, "\n\n");
-    
-    
-    fprintf(stream, "  // State declarations\n");
-    for (size_t i = 0; i < automaton->nstates; i++) {
-        fa_state* state = automaton->states[i];
-        
-        
-        const char* shape = "circle";
-        const char* style = "";
-        const char* fillcolor = "";
-        int peripheries = 1;
-        
-        if (state->is_start && state->is_accept) {
-            shape = "doublecircle";
-            style = "filled";
-            fillcolor = "lightyellow";
-        } else if (state->is_start) {
-            style = "filled";
-            fillcolor = "lightyellow";
-        } else if (state->is_accept) {
-            peripheries = 2;
-        }
-        
-        
-        char* escaped_label = fa_auto_escape_dot_label(state->label);
-        
-        // States
-        fprintf(stream, "  \"%s\" [", escaped_label);
-        
-        bool first_attr = true;
-        if (strcmp(shape, "circle") != 0) {
-            fprintf(stream, "shape=%s", shape);
-            first_attr = false;
-        }
-        
-        if (peripheries != 1) {
-            if (!first_attr) fprintf(stream, ", ");
-            fprintf(stream, "peripheries=%d", peripheries);
-            first_attr = false;
-        }
-        
-        if (style[0] != '\0') {
-            if (!first_attr) fprintf(stream, ", ");
-            fprintf(stream, "style=%s", style);
-            first_attr = false;
-        }
-        
-        if (fillcolor[0] != '\0') {
-            if (!first_attr) fprintf(stream, ", ");
-            fprintf(stream, "fillcolor=%s", fillcolor);
-            first_attr = false;
-        }
-        
-        
-        if (state->ntrans > 0) {
-            if (!first_attr) fprintf(stream, ", ");
-            fprintf(stream, "tooltip=\"%d transitions\"", state->ntrans);
-        }
-        
-        fprintf(stream, "];\n");
-        
-        free(escaped_label);
-    }
-    
-    fprintf(stream, "\n");
-    
-    // Transitions
-    fprintf(stream, "  // Transitions\n");
-    for (size_t i = 0; i < automaton->nstates; i++) {
-        fa_state* state = automaton->states[i];
-        fa_trans* trans = state->trans;
-        
-        char* src_escaped = fa_auto_escape_dot_label(state->label);
-        
-        while (trans != NULL) {
-            
-            char* dest_escaped = fa_auto_escape_dot_label(trans->dest->label);
-            
-            
-            char* symbol_escaped = fa_auto_escape_dot_label(trans->symbol);
-            
-            
-            fprintf(stream, "  \"%s\" -> \"%s\" [label=\"%s\"];\n",
-                    src_escaped, dest_escaped, symbol_escaped);
-            
-            free(dest_escaped);
-            free(symbol_escaped);
-            trans = trans->next;
-        }
-        
-        free(src_escaped);
-    }
-    
-    fprintf(stream, "}\n");
-    
-    return 0;
-}
-
-int fa_auto_export_dot_file(const fa_auto* automaton, const char* filename){
-    if (automaton == NULL || filename == NULL) {
-        return -1;  
-    }
-    
-    FILE* dot_file = fopen(filename, "w");
-    if (dot_file == NULL) {
-        return -2;  
-    }
-    
-    int result = fa_auto_export_dot_stream(automaton, dot_file);
-    fclose(dot_file);
-    
-    return result;
-}
-
-
-int fa_auto_export_json_file(const fa_auto* automaton, const char* filename) {
-    if (automaton == NULL || filename == NULL) {
-        return -1;  
-    }
-    
-    FILE* json_file = fopen(filename, "w");
-    if (json_file == NULL) {
-        return -2;  
-    }
-    
-    int result = fa_auto_export_json_stream(automaton, json_file);
-    fclose(json_file);
-    
-    return result;
-}
-
-
-static char* json_escape(const char* str) {
-    if (str == NULL) return strdup("null");
-        
-    size_t len = strlen(str);
-    size_t escaped_len = 0;
-        
-    // Count characters that need escaping
-    for (size_t i = 0; i < len; i++) {
-        switch (str[i]) {
-            case '\"': case '\\': case '\b': case '\f': 
-            case '\n': case '\r': case '\t':
-                escaped_len += 2;  // \ + escaped char
-                break;
-            default:
-                escaped_len += 1;
-                break;
-        }
-    }
-        
-    char* escaped = malloc(escaped_len + 1);
-    if (!escaped) return NULL;
-        
-    size_t j = 0;
-    for (size_t i = 0; i < len; i++) {
-        switch (str[i]) {
-            case '\"': escaped[j++] = '\\'; escaped[j++] = '\"'; break;
-            case '\\': escaped[j++] = '\\'; escaped[j++] = '\\'; break;
-            case '\b': escaped[j++] = '\\'; escaped[j++] = 'b'; break;
-            case '\f': escaped[j++] = '\\'; escaped[j++] = 'f'; break;
-            case '\n': escaped[j++] = '\\'; escaped[j++] = 'n'; break;
-            case '\r': escaped[j++] = '\\'; escaped[j++] = 'r'; break;
-            case '\t': escaped[j++] = '\\'; escaped[j++] = 't'; break;
-            default:   escaped[j++] = str[i]; break;
-        }
-    }
-    escaped[j] = '\0';
-    return escaped;
-}
-
-int fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
-    if (automaton == NULL || stream == NULL) {
-        return -1;
-    }
-    
-    // Helper to write comma except for first item
-    bool first_state = true;
-    bool first_transition = true;
-    
-    //JSON object
-    fprintf(stream, "{\n");
-    
-    // Metadata section
-    fprintf(stream, "  \"metadata\": {\n");
-    fprintf(stream, "    \"type\": \"finite_automaton\",\n");
-    fprintf(stream, "    \"state_count\": %d,\n", automaton->nstates);
-    fprintf(stream, "    \"alphabet_size\": %d,\n", automaton->alphabet->length);
-    
-    // Alphabet
-    fprintf(stream, "    \"alphabet\": [\n");
-    
-    set_fprint(automaton->alphabet, fprint_string, stream);
-    
-    fprintf(stream, "    ]\n");
-    fprintf(stream, "  },\n");
-    
-    // States section
-    fprintf(stream, "  \"states\": [\n");
-    
-    for (size_t i = 0; i < automaton->nstates; i++) {
-        fa_state* state = automaton->states[i];
-        
-        if (!first_state) {
-            fprintf(stream, ",\n");
-        }
-        first_state = false;
-        
-        char* label_escaped = json_escape(state->label);
-        
-        fprintf(stream, "    {\n");
-        fprintf(stream, "      \"id\": %zu,\n", i);
-        fprintf(stream, "      \"label\": \"%s\",\n", label_escaped);
-        fprintf(stream, "      \"is_start\": %s,\n", state->is_start ? "true" : "false");
-        fprintf(stream, "      \"is_accept\": %s,\n", state->is_accept ? "true" : "false");
-        fprintf(stream, "      \"transition_count\": %d,\n", state->ntrans);
-        
-        // Transitions for this state
-        fprintf(stream, "      \"transitions\": [\n");
-        
-        fa_trans* trans = state->trans;
-        first_transition = true;
-        
-        while (trans != NULL) {
-            if (!first_transition) {
-                fprintf(stream, ",\n");
-            }
-            first_transition = false;
-            
-            char* symbol_escaped = json_escape(trans->symbol);
-            char* dest_label_escaped = json_escape(trans->dest->label);
-            
-            // Find destination state index
-            int dest_index = -1;
-            for (size_t j = 0; j < automaton->nstates; j++) {
-                if (automaton->states[j] == trans->dest) {
-                    dest_index = j;
-                    break;
-                }
-            }
-            
-            fprintf(stream, "        {\n");
-            fprintf(stream, "          \"symbol\": \"%s\",\n", symbol_escaped);
-            fprintf(stream, "          \"destination\": {\n");
-            fprintf(stream, "            \"id\": %d,\n", dest_index);
-            fprintf(stream, "            \"label\": \"%s\"\n", dest_label_escaped);
-            fprintf(stream, "          }\n");
-            fprintf(stream, "        }");
-            
-            free(symbol_escaped);
-            free(dest_label_escaped);
-            trans = trans->next;
-        }
-        
-        fprintf(stream, "\n      ]\n");
-        fprintf(stream, "    }");
-        
-        free(label_escaped);
-    }
-    
-    fprintf(stream, "\n  ],\n");
-    
-    // Statistics section
-    fprintf(stream, "  \"statistics\": {\n");
-    
-    // Count start and accept states
-    int start_count = 0;
-    int accept_count = 0;
-    int total_transitions = 0;
-    
-    for (size_t i = 0; i < automaton->nstates; i++) {
-        fa_state* state = automaton->states[i];
-        if (state->is_start) start_count++;
-        if (state->is_accept) accept_count++;
-        total_transitions += state->ntrans;
-    }
-    
-    fprintf(stream, "    \"start_state_count\": %d,\n", start_count);
-    fprintf(stream, "    \"accept_state_count\": %d,\n", accept_count);
-    fprintf(stream, "    \"total_transitions\": %d,\n", total_transitions);
-    
-    // Calculate average transitions per state
-    double avg_transitions = automaton->nstates > 0 ? 
-                            (double)total_transitions / automaton->nstates : 0.0;
-    fprintf(stream, "    \"average_transitions_per_state\": %.2f\n", avg_transitions);
-    
-    fprintf(stream, "  }\n");
-    
-    // End JSON object
-    fprintf(stream, "}\n");
-    
-    return 0;
 }
 
 
@@ -1157,7 +883,7 @@ static fa_auto* generate_minimized_DFA(const fa_auto* automaton, int final_parti
     fa_auto* minimized_dfa = fa_auto_create(num_states);
 
     //set the alphabet
-    minimized_dfa->alphabet = automaton->alphabet;
+    minimized_dfa->alphabet = automaton->alphabet; 
 
     int groups[automaton->nstates];
 
@@ -1321,21 +1047,40 @@ fa_auto* fa_auto_minimize_moore(const fa_auto *automaton){
     return minimized_dfa;
 }
 
+void fa_state_destroy(fa_state* s){
 
+}
 
-void fa_auto_destroy(fa_auto* a){
+void fa_auto_destroy(fa_auto* a) {
+    if (!a) return;
+    
+    
     for (int i = 0; i < a->nstates; i++) {
-        fa_trans* current = a->states[i]->trans;
+        fa_state* state = a->states[i];
+        if (!state) continue;
+        
+        
+        fa_trans* current = state->trans;
         while (current) {
             fa_trans* next = current->next;
+            free(current->symbol);  
             free(current);
             current = next;
         }
-        free(a->states[i]);
+        
+        free(state->label);  
+        free(state);
     }
+    
+    
+    if (a->alphabet) {
+        set_destroy(a->alphabet);  
+    }
+    
     free(a->states);
     free(a);
 }
+
 // Stack Operations
 
 fa_stack* fa_stack_create(int initial_capacity) {
