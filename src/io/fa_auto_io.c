@@ -45,18 +45,11 @@ static char* fa_auto_escape_dot_label(const char* label) {
 }
 
 fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream){
-    printf("Entered dot stream export function\n");
+    
     if (automaton == NULL || stream == NULL) {
         return FA_ERR_NULL_ARGUMENT;
     }
 
-    printf("Attempting first fprintf...\n");
-    int test = fprintf(stream, "%% Test\n");
-    if (test < 0) {
-        perror("ERROR: First fprintf failed");
-        return FA_ERR_IO_WRITE_FAILED;
-    }
-    
     // Metadata
     fprintf(stream, "digraph Automaton {\n");
     
@@ -270,11 +263,11 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
     fprintf(stream, "    \"alphabet_size\": %d,\n", automaton->alphabet->length);
     
     // Alphabet
-    fprintf(stream, "    \"alphabet\": [\n");
+    fprintf(stream, "    \"alphabet\": [ ");
     
     set_fprint(automaton->alphabet, fprint_string, stream);
     
-    fprintf(stream, "    ]\n");
+    fprintf(stream, " ]\n");
     fprintf(stream, "  },\n");
     
     // States section
@@ -295,7 +288,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
         fprintf(stream, "      \"label\": \"%s\",\n", label_escaped);
         fprintf(stream, "      \"is_start\": %s,\n", state->is_start ? "true" : "false");
         fprintf(stream, "      \"is_accept\": %s,\n", state->is_accept ? "true" : "false");
-        fprintf(stream, "      \"transition_count\": %d,\n", state->ntrans);
+        fprintf(stream, "      \"outgoing_transition_count\": %d,\n", state->ntrans);
         
         // Transitions for this state
         fprintf(stream, "      \"transitions\": [\n");

@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "type": "finite_automaton",
+    "state_count": 4,
+    "alphabet_size": 5,
+    "alphabet": [ "a", "b", "c", "d", "e" ]
+  },
+  "states": [
+    {
+      "id": 0,
+      "label": "q0",
+      "is_start": true,
+      "is_accept": true,
+      "outgoing_transition_count": 4,
+      "transitions": [
+        {
+          "symbol": "c",
+          "destination": {
+            "id": 3,
+            "label": "q3"
+          }
+        },
+        {
+          "symbol": "b",
+          "destination": {
+            "id": 2,
+            "label": "q2"
+          }
+        },
+        {
+          "symbol": "e",
+          "destination": {
+            "id": 1,
+            "label": "q1"
+          }
+        },
+        {
+          "symbol": "a",
+          "destination": {
+            "id": 0,
+            "label": "q0"
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "label": "q1",
+      "is_start": true,
+      "is_accept": false,
+      "outgoing_transition_count": 1,
+      "transitions": [
+        {
+          "symbol": "d",
+          "destination": {
+            "id": 2,
+            "label": "q2"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "label": "q2",
+      "is_start": false,
+      "is_accept": true,
+      "outgoing_transition_count": 1,
+      "transitions": [
+        {
+          "symbol": "c",
+          "destination": {
+            "id": 3,
+            "label": "q3"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "label": "q3",
+      "is_start": false,
+      "is_accept": true,
+      "outgoing_transition_count": 2,
+      "transitions": [
+        {
+          "symbol": "a",
+          "destination": {
+            "id": 3,
+            "label": "q3"
+          }
+        },
+        {
+          "symbol": "e",
+          "destination": {
+            "id": 2,
+            "label": "q2"
+          }
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "start_state_count": 2,
+    "accept_state_count": 3,
+    "total_transitions": 8,
+    "average_transitions_per_state": 2.00
+  }
+}

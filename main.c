@@ -113,17 +113,30 @@ int main()
         }
     }
 
-    fa_auto_print_verbose(automaton);
 
     /* -----------------------------
-       7. Print the resulting automaton
+       7. Generate the corresponding dot file
+       ----------------------------- */
+    fa_auto_export_dot_file(automaton, "../examples/basic_automaton.dot");
+
+
+    /* -----------------------------
+       8. Generate the corresponding json file
+       ----------------------------- */
+    fa_auto_export_json_file(automaton, "../examples/basic_automaton.json");
+    
+
+    /* -----------------------------
+       9. Print the resulting automaton
        ----------------------------- */
 
     // Print full automaton structure using a function that knows
     // how to print symbols stored as strings
-    // fa_auto_print_verbose(automaton, print_string);
+    fa_auto_print_verbose(automaton);
+
+
 
     // Destroy automaton
     fa_auto_destroy(automaton);
-    printf("Destroyed Automaton\n");
+    
 }
