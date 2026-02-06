@@ -85,12 +85,14 @@ void test_binary_operations() {
    fa_auto* A = create_automaton1();
    fa_auto* B = create_automaton2();
 
-   fa_auto_export_dot_file(A, "../examples/binary_operations/a.dot", &FA_STYLES_DOT_STYLE_FANCY);
+   fa_auto_export_dot_file(A, "../examples/binary_operations/a.dot", &FA_STYLES_DOT_STYLE_CLASSIC);
    fa_auto_export_dot_file(B, "../examples/binary_operations/b.dot", &FA_STYLES_DOT_STYLE_CLASSIC);
+   
     
    // Test union
    fa_auto* union_fa = fa_auto_union(A, B);
-   fa_auto_export_dot_file(union_fa, "../examples/binary_operations/a_union_b.dot", &FA_STYLES_DOT_STYLE_ARROWS);
+   fa_auto_export_dot_file(union_fa, "../examples/binary_operations/a_union_b.dot", &FA_STYLES_DOT_STYLE_FANCY);
+   fa_auto_export_json_file(union_fa, "../examples/binary_operations/a_union_b.json");
     
    printf("Testing Union (A U B):\n");
    printf("  'ab' should be accepted: %s\n", 
@@ -105,7 +107,8 @@ void test_binary_operations() {
    // Test concatenation
    fa_auto* concat_fa = fa_auto_concat(A, B);
    fa_auto_export_dot_file(concat_fa, "../examples/binary_operations/a_concat_b.dot", &FA_STYLES_DOT_STYLE_FANCY);
-    
+   fa_auto_export_json_file(concat_fa, "../examples/binary_operations/a_concat_b.json");
+
    printf("\nTesting Concatenation (A . B):\n");
    printf("  'ab' should be accepted: %s\n", 
          fa_auto_accepts(concat_fa, "ab") ? "PASS" : "FAIL");

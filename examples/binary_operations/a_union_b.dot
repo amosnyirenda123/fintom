@@ -3,13 +3,36 @@ digraph Automaton {
   rankdir=LR;
   node [shape=circle, fontname="Arial", fontsize=12];
   edge [fontname="Arial", fontsize=10, color="black"];
-  // Metadata
-  label="States: 7, Alphabet size: 2";
+  label="Automaton\nStates: 7, Symbols: 2";
   labelloc=top;
   // Alphabet: "a", "b"
 
   // State declarations
   __start [shape=point, width=0];
+  "q0" [fillcolor=white, tooltip="2 transitions"];
+  "q1" [fillcolor=white, tooltip="2 transitions"];
+  "q2" [fillcolor=white, tooltip="3 transitions"];
+  "q3" [fillcolor=white, tooltip="3 transitions"];
+  "q4" [fillcolor=white, tooltip="2 transitions"];
+  "q5" [fillcolor=white, tooltip="2 transitions"];
+  __start -> "q5";
+  "q6" [peripheries=2, fillcolor=white];
+  "q6" -> __accept_6;
+  __accept_6 [shape=point, width=0];
 
   // Transitions
+  "q0" -> "q1" [label="a"];
+  "q0" -> "q0" [label="b"];
+  "q1" -> "q1" [label="a"];
+  "q1" -> "q2" [label="b"];
+  "q2" -> "q6" [label="ε"];
+  "q2" -> "q1" [label="a"];
+  "q2" -> "q0" [label="b"];
+  "q3" -> "q6" [label="ε"];
+  "q3" -> "q4" [label="a"];
+  "q3" -> "q3" [label="b"];
+  "q4" -> "q3" [label="a"];
+  "q4" -> "q4" [label="b"];
+  "q5" -> "q3" [label="ε"];
+  "q5" -> "q0" [label="ε"];
 }

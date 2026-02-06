@@ -242,11 +242,13 @@ fa_auto* fa_auto_union(const fa_auto* a1, const fa_auto* a2){
 
     for (int i = 0; i < a1->capacity; i++) {
         automaton->states[i] = fa_state_create(a1->states[i]->label, false, false);
+        automaton->nstates++;
     }
 
     const int last_idx = a1->capacity;
     for (int i = 0; i < a2->capacity; i++) {
         automaton->states[last_idx + i] = fa_state_create(a2->states[i]->label, false, false);
+        automaton->nstates++;
     }
 
 
@@ -272,6 +274,7 @@ fa_auto* fa_auto_union(const fa_auto* a1, const fa_auto* a2){
 
     automaton->states[a1->capacity + a2->capacity] = new_origin;
     automaton->states[a1->capacity + a2->capacity + 1] = new_destination;
+    automaton->nstates += offset;
 
 
     //adding a2 transitions
@@ -421,11 +424,13 @@ fa_auto* fa_auto_concat(const fa_auto* a1, const fa_auto* a2){
 
     for (int i = 0; i < a1->capacity; i++) {
         automaton->states[i] = fa_state_create(a1->states[i]->label, a1->states[i]->is_start, false);
+        automaton->nstates++;
     }
 
     const int last_idx = a1->capacity;
     for (int i = 0; i < a2->capacity; i++) {
         automaton->states[last_idx + i] = fa_state_create(a2->states[i]->label, false, a2->states[i]->is_accept);
+        automaton->nstates++;
     }
 
 

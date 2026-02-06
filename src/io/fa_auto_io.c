@@ -81,16 +81,27 @@ fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream, con
             cfg->fontname, cfg->edge_fontsize, cfg->edge_color);
 
     
-    fprintf(stream, "  // Metadata\n");
-    fprintf(stream, "  label=\"States: %d, Alphabet size: %d\";\n",
-            automaton->capacity, automaton->alphabet->length);
-    fprintf(stream, "  labelloc=top;\n");
+    // Metadata
+    if (cfg->show_metadata) {
+        fprintf(stream, "  label=\"Automaton\\n");
+        fprintf(stream, "States: %zu, Symbols: %zu",automaton->nstates, automaton->alphabet->length);
+        if (cfg->show_alphabet && automaton->alphabet) {
+            //TODO: Render alphabet correctly
+            // fprintf(stream, ", Alphabet: {");
+            // set_fprint(automaton->alphabet, fprint_string, stream);
+            // fprintf(stream, "}");
+        }
+        fprintf(stream, "\";\n");
+        fprintf(stream, "  labelloc=top;\n");
+    }
     
     
-    // Alphabet
-    fprintf(stream, "  // Alphabet: ");
-    set_fprint(automaton->alphabet, fprint_string, stream);
-    fprintf(stream, "\n\n");
+    // Alphabet comment
+    if (cfg->show_alphabet && automaton->alphabet) {
+        fprintf(stream, "  // Alphabet: ");
+        set_fprint(automaton->alphabet, fprint_string, stream);
+        fprintf(stream, "\n\n");
+    }
     
     
     
@@ -102,9 +113,12 @@ fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream, con
     }
 
     // Process each state
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
+        
         fa_state* state = automaton->states[i];
+
         if (!state) continue;
+
         
         char* escaped_label = fa_auto_escape_dot_label(state->label);
         
@@ -205,7 +219,7 @@ fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream, con
         // Use a hashmap to merge edges between same source/dest
         fa_edge_map_t* edge_map = edge_map_create();
         
-        for (size_t i = 0; i < automaton->nstates; i++) {
+        for (size_t i = 0; i < automaton->capacity; i++) {
             fa_state* state = automaton->states[i];
             if (!state) continue;
             
@@ -229,7 +243,7 @@ fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream, con
         edge_map_destroy(edge_map);
     } else {
         // Original non-merged edge printing
-        for (size_t i = 0; i < automaton->nstates; i++) {
+        for (size_t i = 0; i < automaton->capacity; i++) {
             fa_state* state = automaton->states[i];
             if (!state) continue;
             
@@ -334,6 +348,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
     if (automaton == NULL || stream == NULL) {
         return FA_ERR_NULL_ARGUMENT;
     }
+
     
     // Helper to write comma except for first item
     bool first_state = true;
@@ -345,7 +360,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
     // Metadata section
     fprintf(stream, "  \"metadata\": {\n");
     fprintf(stream, "    \"type\": \"finite_automaton\",\n");
-    fprintf(stream, "    \"state_count\": %d,\n", automaton->capacity);
+    fprintf(stream, "    \"state_count\": %d,\n", automaton->nstates);
     fprintf(stream, "    \"alphabet_size\": %d,\n", automaton->alphabet->length);
     
     // Alphabet

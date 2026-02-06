@@ -3,12 +3,27 @@ digraph Automaton {
   rankdir=TB;
   node [shape=ellipse, fontname="Times-Roman", fontsize=14];
   edge [fontname="Times-Roman", fontsize=11, color="navy"];
-  // Metadata
-  label="States: 5, Alphabet size: 2";
+  label="Automaton\nStates: 5, Symbols: 2";
   labelloc=top;
   // Alphabet: "a", "b"
 
   // State declarations
+  "q0" [style=filled, fillcolor=gold, tooltip="2 transitions"];
+  "q1" [fillcolor=ghostwhite, tooltip="2 transitions"];
+  "q2" [fillcolor=ghostwhite, tooltip="3 transitions"];
+  "q3" [peripheries=2, fillcolor=ghostwhite, tooltip="2 transitions"];
+  "q4" [fillcolor=ghostwhite, tooltip="2 transitions"];
 
   // Transitions
+  "q0" -> "q1" [label="a"];
+  "q0" -> "q0" [label="b"];
+  "q1" -> "q1" [label="a"];
+  "q1" -> "q2" [label="b"];
+  "q2" -> "q3" [label="ε"];
+  "q2" -> "q1" [label="a"];
+  "q2" -> "q0" [label="b"];
+  "q3" -> "q4" [label="a"];
+  "q3" -> "q3" [label="b"];
+  "q4" -> "q3" [label="a"];
+  "q4" -> "q4" [label="b"];
 }

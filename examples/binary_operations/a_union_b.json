@@ -1,0 +1,176 @@
+{
+  "metadata": {
+    "type": "finite_automaton",
+    "state_count": 7,
+    "alphabet_size": 2,
+    "alphabet": ["a", "b"]
+  },
+  "states": [
+    {
+      "id": 0,
+      "label": "q0",
+      "is_start": false,
+      "is_accept": false,
+      "outgoing_transition_count": 2,
+      "transitions": [
+        {
+          "symbol": "a",
+          "destination": {
+            "id": 1,
+            "label": "q1"
+          }
+        },
+        {
+          "symbol": "b",
+          "destination": {
+            "id": 0,
+            "label": "q0"
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "label": "q1",
+      "is_start": false,
+      "is_accept": false,
+      "outgoing_transition_count": 2,
+      "transitions": [
+        {
+          "symbol": "a",
+          "destination": {
+            "id": 1,
+            "label": "q1"
+          }
+        },
+        {
+          "symbol": "b",
+          "destination": {
+            "id": 2,
+            "label": "q2"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "label": "q2",
+      "is_start": false,
+      "is_accept": false,
+      "outgoing_transition_count": 3,
+      "transitions": [
+        {
+          "symbol": "ε",
+          "destination": {
+            "id": 6,
+            "label": "q6"
+          }
+        },
+        {
+          "symbol": "a",
+          "destination": {
+            "id": 1,
+            "label": "q1"
+          }
+        },
+        {
+          "symbol": "b",
+          "destination": {
+            "id": 0,
+            "label": "q0"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "label": "q3",
+      "is_start": false,
+      "is_accept": false,
+      "outgoing_transition_count": 3,
+      "transitions": [
+        {
+          "symbol": "ε",
+          "destination": {
+            "id": 6,
+            "label": "q6"
+          }
+        },
+        {
+          "symbol": "a",
+          "destination": {
+            "id": 4,
+            "label": "q4"
+          }
+        },
+        {
+          "symbol": "b",
+          "destination": {
+            "id": 3,
+            "label": "q3"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "label": "q4",
+      "is_start": false,
+      "is_accept": false,
+      "outgoing_transition_count": 2,
+      "transitions": [
+        {
+          "symbol": "a",
+          "destination": {
+            "id": 3,
+            "label": "q3"
+          }
+        },
+        {
+          "symbol": "b",
+          "destination": {
+            "id": 4,
+            "label": "q4"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "label": "q5",
+      "is_start": true,
+      "is_accept": false,
+      "outgoing_transition_count": 2,
+      "transitions": [
+        {
+          "symbol": "ε",
+          "destination": {
+            "id": 3,
+            "label": "q3"
+          }
+        },
+        {
+          "symbol": "ε",
+          "destination": {
+            "id": 0,
+            "label": "q0"
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "label": "q6",
+      "is_start": false,
+      "is_accept": true,
+      "outgoing_transition_count": 0,
+      "transitions": []
+    }
+  ],
+  "statistics": {
+    "start_state_count": 1,
+    "accept_state_count": 1,
+    "total_transitions": 14,
+    "average_transitions_per_state": 2.0
+  }
+}

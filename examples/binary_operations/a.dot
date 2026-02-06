@@ -1,17 +1,12 @@
 digraph Automaton {
   // Automaton properties
-  rankdir=TB;
-  node [shape=ellipse, fontname="Times-Roman", fontsize=14];
-  edge [fontname="Times-Roman", fontsize=11, color="navy"];
-  // Metadata
-  label="States: 3, Alphabet size: 2";
-  labelloc=top;
-  // Alphabet: "a", "b"
-
+  rankdir=LR;
+  node [shape=circle, fontname="Helvetica", fontsize=10];
+  edge [fontname="Helvetica", fontsize=8, color="black"];
   // State declarations
-  "q0" [style=filled, fillcolor=gold, tooltip="2 transitions"];
-  "q1" [fillcolor=ghostwhite, tooltip="2 transitions"];
-  "q2" [peripheries=2, fillcolor=ghostwhite, tooltip="2 transitions"];
+  "q0" [fillcolor=white];
+  "q1" [fillcolor=white];
+  "q2" [peripheries=2, fillcolor=white];
 
   // Transitions
   "q0" -> "q0" [label="b"];

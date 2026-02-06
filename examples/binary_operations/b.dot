@@ -3,8 +3,7 @@ digraph Automaton {
   rankdir=LR;
   node [shape=circle, fontname="Arial", fontsize=12];
   edge [fontname="Arial", fontsize=10, color="black"];
-  // Metadata
-  label="States: 2, Alphabet size: 2";
+  label="Automaton\nStates: 2, Symbols: 2";
   labelloc=top;
   // Alphabet: "a", "b"
 
