@@ -3,6 +3,7 @@
 
 #include "../fa/fa.h"
 #include "../fa_error.h"
+#include "../fa_styles.h"
 #include <stdio.h>
 
 
@@ -13,18 +14,20 @@
  * 
  * @param automaton The automaton to export
  * @param filename The output filename
+ * @param style The style to apply when generating the dot file
  * @return 0 on success, non-zero on error
  */
-fa_error_t fa_auto_export_dot_file(const fa_auto* automaton, const char* filename);
+fa_error_t fa_auto_export_dot_file(const fa_auto* automaton, const char* filename, const fa_styles_dot_style_t* style);
 
 /**
  * @brief Export automaton to DOT format and write to a stream.
  * 
  * @param automaton The automaton to export
  * @param stream The output stream
+ * @param style The style to apply when generating the dot file
  * @return 0 on success, non-zero on error
  */
-fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream);
+fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream, const fa_styles_dot_style_t* style);
 
 
 /**

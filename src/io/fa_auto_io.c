@@ -1,4 +1,5 @@
 #include "../../include/io/fa_auto_io.h"
+#include "../../include/fa_utils.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -44,93 +45,152 @@ static char* fa_auto_escape_dot_label(const char* label) {
     return escaped;
 }
 
-fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream){
+fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream, const fa_styles_dot_style_t* style){
     
-    if (automaton == NULL || stream == NULL) {
+    if (automaton == NULL || stream == NULL || style == NULL) {
         return FA_ERR_NULL_ARGUMENT;
     }
+
+    fa_styles_dot_style_t default_style = FA_STYLES_DEFAULT_DOT_STYLE;
+    const fa_styles_dot_style_t* cfg = style ? style : &default_style;
 
     // Metadata
     fprintf(stream, "digraph Automaton {\n");
     
     fprintf(stream, "  // Automaton properties\n");
-    fprintf(stream, "  rankdir=LR;                // Left-to-right layout\n");
-    fprintf(stream, "  node [shape=circle];       // Default shape for states\n");
+
+    // Layout
+    const char* rankdir_str;
+    switch (cfg->rankdir) {
+        case FA_LAYOUT_RL: rankdir_str = "RL"; break;
+        case FA_LAYOUT_TB: rankdir_str = "TB"; break;
+        case FA_LAYOUT_BT: rankdir_str = "BT"; break;
+        default: rankdir_str = "LR"; break;
+    }
+
+    fprintf(stream, "  rankdir=%s;\n", rankdir_str);
+
+    // Default node properties
+    fprintf(stream, "  node [shape=%s", cfg->default_shape);
+    fprintf(stream, ", fontname=\"%s\", fontsize=%d", 
+            cfg->fontname, cfg->fontsize);
+    fprintf(stream, "];\n");
+
+    // Default edge properties
+    fprintf(stream, "  edge [fontname=\"%s\", fontsize=%d, color=\"%s\"];\n",
+            cfg->fontname, cfg->edge_fontsize, cfg->edge_color);
 
     
     fprintf(stream, "  // Metadata\n");
     fprintf(stream, "  label=\"States: %d, Alphabet size: %d\";\n",
-            automaton->nstates, automaton->alphabet->length);
+            automaton->capacity, automaton->alphabet->length);
     fprintf(stream, "  labelloc=top;\n");
-    fprintf(stream, "  fontsize=12;\n\n");
-
-    printf("Finished Printing meta data");
+    
     
     // Alphabet
     fprintf(stream, "  // Alphabet: ");
     set_fprint(automaton->alphabet, fprint_string, stream);
     fprintf(stream, "\n\n");
     
-    printf("Finished Printing Alphabet");
+    
     
     fprintf(stream, "  // State declarations\n");
+
+    // First, create an invisible node for start arrows if needed
+    if (cfg->use_start_arrow) {
+        fprintf(stream, "  __start [shape=point, width=0];\n");
+    }
+
+    // Process each state
     for (size_t i = 0; i < automaton->nstates; i++) {
         fa_state* state = automaton->states[i];
-        
-        
-        const char* shape = "circle";
-        const char* style = "";
-        const char* fillcolor = "";
-        int peripheries = 1;
-        
-        if (state->is_start && state->is_accept) {
-            shape = "doublecircle";
-            style = "filled";
-            fillcolor = "lightyellow";
-        } else if (state->is_start) {
-            style = "filled";
-            fillcolor = "lightyellow";
-        } else if (state->is_accept) {
-            peripheries = 2;
-        }
-        
+        if (!state) continue;
         
         char* escaped_label = fa_auto_escape_dot_label(state->label);
         
-        // States
+        // Determine state properties based on style
+        const char* shape = cfg->default_shape;
+        const char* style = "";
+        const char* fillcolor = cfg->default_color;
+        int peripheries = 1;
+        
+        if (cfg->style == FA_STYLE_MINIMAL) {
+            // Minimal style - only distinguish accept states
+            if (state->is_accept) {
+                peripheries = 2;
+            }
+        } 
+        else if (cfg->style == FA_STYLE_FILL) {
+            // Color fill style
+            if (state->is_start && state->is_accept) {
+                style = "filled";
+                fillcolor = cfg->start_accept_color;
+            } else if (state->is_start) {
+                style = "filled";
+                fillcolor = cfg->start_color;
+            } else if (state->is_accept) {
+                peripheries = 2;
+            }
+        }
+        else if (cfg->style == FA_STYLE_PERIPHERY) {
+            // Double periphery style
+            if (state->is_accept) {
+                peripheries = 2;
+            }
+            if (state->is_start) {
+                style = "filled";
+                fillcolor = cfg->start_color;
+            }
+        }
+        // FA_STYLE_ARROWS is handled separately
+        
+        // Print node attributes
         fprintf(stream, "  \"%s\" [", escaped_label);
         
-        bool first_attr = true;
-        if (strcmp(shape, "circle") != 0) {
-            fprintf(stream, "shape=%s", shape);
-            first_attr = false;
+        // Build attribute list
+        char attr_buffer[1024] = "";
+        char temp[256];
+        
+        if (strcmp(shape, cfg->default_shape) != 0) {
+            snprintf(temp, sizeof(temp), "shape=%s", shape);
+            strcat(attr_buffer, temp);
         }
         
         if (peripheries != 1) {
-            if (!first_attr) fprintf(stream, ", ");
-            fprintf(stream, "peripheries=%d", peripheries);
-            first_attr = false;
+            if (attr_buffer[0]) strcat(attr_buffer, ", ");
+            snprintf(temp, sizeof(temp), "peripheries=%d", peripheries);
+            strcat(attr_buffer, temp);
         }
         
         if (style[0] != '\0') {
-            if (!first_attr) fprintf(stream, ", ");
-            fprintf(stream, "style=%s", style);
-            first_attr = false;
+            if (attr_buffer[0]) strcat(attr_buffer, ", ");
+            snprintf(temp, sizeof(temp), "style=%s", style);
+            strcat(attr_buffer, temp);
         }
         
         if (fillcolor[0] != '\0') {
-            if (!first_attr) fprintf(stream, ", ");
-            fprintf(stream, "fillcolor=%s", fillcolor);
-            first_attr = false;
+            if (attr_buffer[0]) strcat(attr_buffer, ", ");
+            snprintf(temp, sizeof(temp), "fillcolor=%s", fillcolor);
+            strcat(attr_buffer, temp);
         }
         
-        
-        if (state->ntrans > 0) {
-            if (!first_attr) fprintf(stream, ", ");
-            fprintf(stream, "tooltip=\"%d transitions\"", state->ntrans);
+        if (cfg->show_tooltips && state->ntrans > 0) {
+            if (attr_buffer[0]) strcat(attr_buffer, ", ");
+            snprintf(temp, sizeof(temp), "tooltip=\"%d transitions\"", state->ntrans);
+            strcat(attr_buffer, temp);
         }
         
-        fprintf(stream, "];\n");
+        fprintf(stream, "%s];\n", attr_buffer);
+        
+        // Add start/accept arrows if configured
+        if (cfg->use_start_arrow && state->is_start) {
+            fprintf(stream, "  __start -> \"%s\";\n", escaped_label);
+        }
+        
+        if (cfg->use_accept_arrow && state->is_accept) {
+            fprintf(stream, "  \"%s\" -> __accept_%zu;\n", escaped_label, i);
+            fprintf(stream, "  __accept_%zu [shape=point, width=0];\n", i);
+        }
         
         free(escaped_label);
     }
@@ -139,37 +199,63 @@ fa_error_t fa_auto_export_dot_stream(const fa_auto* automaton, FILE* stream){
     
     // Transitions
     fprintf(stream, "  // Transitions\n");
-    for (size_t i = 0; i < automaton->nstates; i++) {
-        fa_state* state = automaton->states[i];
-        fa_trans* trans = state->trans;
+    
+    // For edge merging, we need to collect transitions
+    if (cfg->merge_edges) {
+        // Use a hashmap to merge edges between same source/dest
+        fa_edge_map_t* edge_map = edge_map_create();
         
-        char* src_escaped = fa_auto_escape_dot_label(state->label);
-        
-        while (trans != NULL) {
+        for (size_t i = 0; i < automaton->nstates; i++) {
+            fa_state* state = automaton->states[i];
+            if (!state) continue;
             
-            char* dest_escaped = fa_auto_escape_dot_label(trans->dest->label);
-            
-            
-            char* symbol_escaped = fa_auto_escape_dot_label(trans->symbol);
-            
-            
-            fprintf(stream, "  \"%s\" -> \"%s\" [label=\"%s\"];\n",
-                    src_escaped, dest_escaped, symbol_escaped);
-            
-            free(dest_escaped);
-            free(symbol_escaped);
-            trans = trans->next;
+            fa_trans* trans = state->trans;
+            while (trans != NULL) {
+                char* src = fa_auto_escape_dot_label(state->label);
+                char* dest = fa_auto_escape_dot_label(trans->dest->label);
+                char* symbol = fa_auto_escape_dot_label(trans->symbol);
+                
+                edge_map_add(edge_map, src, dest, symbol);
+                
+                free(src);
+                free(dest);
+                free(symbol);
+                trans = trans->next;
+            }
         }
         
-        free(src_escaped);
+        // Print merged edges
+        edge_map_write(edge_map, stream);
+        edge_map_destroy(edge_map);
+    } else {
+        // Original non-merged edge printing
+        for (size_t i = 0; i < automaton->nstates; i++) {
+            fa_state* state = automaton->states[i];
+            if (!state) continue;
+            
+            char* src_escaped = fa_auto_escape_dot_label(state->label);
+            fa_trans* trans = state->trans;
+            
+            while (trans != NULL) {
+                char* dest_escaped = fa_auto_escape_dot_label(trans->dest->label);
+                char* symbol_escaped = fa_auto_escape_dot_label(trans->symbol);
+                
+                fprintf(stream, "  \"%s\" -> \"%s\" [label=\"%s\"];\n",
+                        src_escaped, dest_escaped, symbol_escaped);
+                
+                free(dest_escaped);
+                free(symbol_escaped);
+                trans = trans->next;
+            }
+            free(src_escaped);
+        }
     }
     
     fprintf(stream, "}\n");
-    
     return FA_SUCCESS;
 }
 
-fa_error_t fa_auto_export_dot_file(const fa_auto* automaton, const char* filename){
+fa_error_t fa_auto_export_dot_file(const fa_auto* automaton, const char* filename, const fa_styles_dot_style_t* style){
     if (automaton == NULL || filename == NULL) {
         return FA_ERR_NULL_ARGUMENT;  
     }
@@ -179,9 +265,9 @@ fa_error_t fa_auto_export_dot_file(const fa_auto* automaton, const char* filenam
         return FA_ERR_IO_FILE_OPEN;  
     }
     
-    printf("Here!\n");
-    fa_error_t result = fa_auto_export_dot_stream(automaton, dot_file);
-    printf("Here 2!\n");
+    
+    fa_error_t result = fa_auto_export_dot_stream(automaton, dot_file, style);
+    
     fclose(dot_file);
     
     return result;
@@ -259,7 +345,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
     // Metadata section
     fprintf(stream, "  \"metadata\": {\n");
     fprintf(stream, "    \"type\": \"finite_automaton\",\n");
-    fprintf(stream, "    \"state_count\": %d,\n", automaton->nstates);
+    fprintf(stream, "    \"state_count\": %d,\n", automaton->capacity);
     fprintf(stream, "    \"alphabet_size\": %d,\n", automaton->alphabet->length);
     
     // Alphabet
@@ -273,7 +359,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
     // States section
     fprintf(stream, "  \"states\": [\n");
     
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
         
         if (!first_state) {
@@ -307,7 +393,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
             
             // Find destination state index
             int dest_index = -1;
-            for (size_t j = 0; j < automaton->nstates; j++) {
+            for (size_t j = 0; j < automaton->capacity; j++) {
                 if (automaton->states[j] == trans->dest) {
                     dest_index = j;
                     break;
@@ -343,7 +429,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
     int accept_count = 0;
     int total_transitions = 0;
     
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
         if (state->is_start) start_count++;
         if (state->is_accept) accept_count++;
@@ -355,8 +441,8 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
     fprintf(stream, "    \"total_transitions\": %d,\n", total_transitions);
     
     // Calculate average transitions per state
-    double avg_transitions = automaton->nstates > 0 ? 
-                            (double)total_transitions / automaton->nstates : 0.0;
+    double avg_transitions = automaton->capacity > 0 ? 
+                            (double)total_transitions / automaton->capacity : 0.0;
     fprintf(stream, "    \"average_transitions_per_state\": %.2f\n", avg_transitions);
     
     fprintf(stream, "  }\n");
@@ -756,7 +842,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
 //         goto cleanup;
 //     }
     
-//     automaton->nstates = state_count;
+//     automaton->capacity = state_count;
 //     automaton->states = malloc(sizeof(fa_state*) * state_count);
 //     if (!automaton->states) {
 //         if (error) *error = FA_IO_ERROR_MEMORY;
@@ -930,9 +1016,9 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
 //         return NULL;
 //     }
     
-//     automaton->nstates = json_integer_value(json_object_get(metadata, "state_count"));
+//     automaton->capacity = json_integer_value(json_object_get(metadata, "state_count"));
 //     automaton->alphabet = set_create();
-//     automaton->states = malloc(sizeof(fa_state*) * automaton->nstates);
+//     automaton->states = malloc(sizeof(fa_state*) * automaton->capacity);
     
 //     if (!automaton->states) {
 //         json_decref(root);
@@ -955,7 +1041,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
     
 //     // Parse states
 //     json_t* states = json_object_get(root, "states");
-//     if (!json_is_array(states) || json_array_size(states) != automaton->nstates) {
+//     if (!json_is_array(states) || json_array_size(states) != automaton->capacity) {
 //         json_decref(root);
 //         set_destroy(automaton->alphabet);
 //         free(automaton->states);
@@ -965,7 +1051,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
 //     }
     
 //     // First pass: create all states
-//     for (size_t i = 0; i < automaton->nstates; i++) {
+//     for (size_t i = 0; i < automaton->capacity; i++) {
 //         json_t* state_obj = json_array_get(states, i);
         
 //         fa_state* state = malloc(sizeof(fa_state));
@@ -993,7 +1079,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
 //     }
     
 //     // Second pass: create transitions
-//     for (size_t i = 0; i < automaton->nstates; i++) {
+//     for (size_t i = 0; i < automaton->capacity; i++) {
 //         json_t* state_obj = json_array_get(states, i);
 //         json_t* transitions = json_object_get(state_obj, "transitions");
         
@@ -1007,7 +1093,7 @@ fa_error_t fa_auto_export_json_stream(const fa_auto* automaton, FILE* stream) {
 //             json_t* dest_obj = json_object_get(trans_obj, "destination");
 //             int dest_id = json_integer_value(json_object_get(dest_obj, "id"));
             
-//             if (dest_id < 0 || dest_id >= automaton->nstates) {
+//             if (dest_id < 0 || dest_id >= automaton->capacity) {
 //                 // Invalid destination, skip
 //                 continue;
 //             }

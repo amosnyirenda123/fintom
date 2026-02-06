@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "type": "finite_automaton",
+    "state_count": 2,
+    "alphabet_size": 1,
+    "alphabet": [ "a" ]
+  },
+  "states": [
+    {
+      "id": 0,
+      "label": "q0",
+      "is_start": true,
+      "is_accept": false,
+      "outgoing_transition_count": 1,
+      "transitions": [
+        {
+          "symbol": "a",
+          "destination": {
+            "id": 1,
+            "label": "q1"
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "label": "q1",
+      "is_start": false,
+      "is_accept": true,
+      "outgoing_transition_count": 0,
+      "transitions": [
+
+      ]
+    }
+  ],
+  "statistics": {
+    "start_state_count": 1,
+    "accept_state_count": 1,
+    "total_transitions": 1,
+    "average_transitions_per_state": 0.50
+  }
+}

@@ -1,0 +1,14 @@
+digraph Automaton {
+  // Automaton properties
+  rankdir=TB;
+  node [shape=ellipse, fontname="Times-Roman", fontsize=14];
+  edge [fontname="Times-Roman", fontsize=11, color="navy"];
+  // Metadata
+  label="States: 5, Alphabet size: 2";
+  labelloc=top;
+  // Alphabet: "a", "b"
+
+  // State declarations
+
+  // Transitions
+}

@@ -1,0 +1,20 @@
+digraph Automaton {
+  // Automaton properties
+  rankdir=LR;
+  node [shape=circle, fontname="Arial", fontsize=12];
+  edge [fontname="Arial", fontsize=10, color="black"];
+  // Metadata
+  label="States: 2, Alphabet size: 2";
+  labelloc=top;
+  // Alphabet: "a", "b"
+
+  // State declarations
+  "q0" [style=filled, fillcolor=lightgreen, tooltip="2 transitions"];
+  "q1" [fillcolor=white, tooltip="2 transitions"];
+
+  // Transitions
+  "q0" -> "q0" [label="b"];
+  "q0" -> "q1" [label="a"];
+  "q1" -> "q1" [label="b"];
+  "q1" -> "q0" [label="a"];
+}

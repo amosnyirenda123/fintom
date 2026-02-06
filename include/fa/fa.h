@@ -3,8 +3,16 @@
 #define FA_FA_H
 #include "../set/set.h"
 #include "../fa_error.h"
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define FA_EPS_SYMBOL "ε"
+
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,7 +75,8 @@ typedef struct fa_trans {
  * (DFA) or nondeterministic (NFA) depending on the transition structure.
  */
 typedef struct fa_auto {
-    int nstates;              /**< Number of states in the automaton */
+    size_t nstates;                /**< Number of states in the states array */
+    size_t capacity;              /**< Number of states in the automaton */
     Set *alphabet;            /**< Input alphabet (set of symbols) */
     fa_state **states;        /**< Array of pointers to states */
 } fa_auto;
@@ -103,6 +112,9 @@ size_t fa_alphabet_insert_symbols(Set* alphabet, const char* symbols[], size_t c
  */
 fa_state* fa_state_create(const char* label, bool is_start, bool is_accept);
 
+
+fa_error_t fa_auto_create_state(fa_auto* automaton, const char* label, bool is_start, bool is_accept);
+
 /**
  * @brief Creates a transition between two states.
  * @param src Source state
@@ -110,13 +122,13 @@ fa_state* fa_state_create(const char* label, bool is_start, bool is_accept);
  * @param symbol Input symbol triggering the transition
  * @return true if transition was created successfully, false otherwise
  */
-bool fa_trans_create(fa_state *src, fa_state *dest, const char* symbol);
-fa_error_t fa_trans_create_validated(const fa_auto *automaton, fa_state *src, 
+fa_error_t fa_trans_create(fa_state *src, fa_state *dest, const char* symbol);
+fa_error_t fa_auto_create_trans(const fa_auto *automaton, fa_state *src, 
                                fa_state *dest, const char* symbol);
 
 
 bool fa_trans_create_epsilon(fa_state *src, fa_state *dest);
-fa_error_t fa_trans_create_epsilon_validated(const fa_auto *automaton, fa_state *src, fa_state *dest);
+fa_error_t fa_auto_create_epsilon_trans(const fa_auto *automaton, fa_state *src, fa_state *dest);
 
 fa_state* fa_state_get_by_label(const fa_auto* automaton, const char* label);
 
@@ -147,10 +159,10 @@ fa_state* fa_state_with_max_trans(const fa_auto* automaton);
  * @brief Gets all destination states reachable via a specific symbol from a state.
  * @param state Source state
  * @param symbol Transition symbol
- * @param nstates Total number of states in automaton (for array allocation)
+ * @param capacity Total number of states in automaton (for array allocation)
  * @return Array of destination states (caller must free with fa_state_free_array)
  */
-fa_state** fa_state_get_dests(fa_state* state, const char* symbol, int nstates);
+fa_state** fa_state_get_dests(fa_state* state, const char* symbol, int capacity);
 
 
 
@@ -160,10 +172,10 @@ fa_state** fa_state_get_dests(fa_state* state, const char* symbol, int nstates);
 
 /**
  * @brief Creates a new automaton with the specified number of states.
- * @param nstates Number of states to allocate
+ * @param capacity Number of states to allocate
  * @return Pointer to the newly created automaton, or NULL on failure
  */
-fa_auto* fa_auto_create(int nstates);
+fa_auto* fa_auto_create(int capacity);
 
 /**
  * @brief Creates an automaton from a single symbol.
@@ -190,12 +202,7 @@ fa_auto* fa_auto_read(const char *filepath);
 // Automaton Conversion and Generation
 // ============================================================================
 
-/**
- * @brief Converts an NFA to a DFA using subset construction.
- * @param nfa The nondeterministic finite automaton
- * @return Equivalent deterministic finite automaton
- */
-fa_auto* fa_auto_to_dfa(fa_auto *nfa);
+
 
 /**
  * @brief Removes epsilon transitions from an automaton.
@@ -229,55 +236,9 @@ void fa_auto_update_final(fa_auto *automaton);
  */
 void fa_auto_rename_states(const fa_auto* automaton);
 
-// ============================================================================
-// Automaton Operations
-// ============================================================================
 
-/**
- * @brief Concatenates two automata (L1 · L2).
- * @param a1 First automaton
- * @param a2 Second automaton
- * @return New automaton accepting L(a1) · L(a2)
- */
-fa_auto* fa_auto_concat(const fa_auto* a1, const fa_auto* a2);
 
-/**
- * @brief Computes the product (intersection) of two automata.
- * @param a1 First automaton
- * @param a2 Second automaton
- * @return New automaton accepting L(a1) ∩ L(a2)
- */
-fa_auto* fa_auto_product(const fa_auto* a1, const fa_auto* a2);
 
-/**
- * @brief Computes the union of two automata (L1 ∪ L2).
- * @param a1 First automaton
- * @param a2 Second automaton
- * @return New automaton accepting L(a1) ∪ L(a2)
- */
-fa_auto* fa_auto_union(const fa_auto* a1, const fa_auto* a2);
-
-/**
- * @brief Applies Kleene star operation to an automaton (L*).
- * @param automaton Input automaton
- * @param variant Implementation variant to use
- * @return New automaton accepting L(automaton)*
- */
-fa_auto* fa_auto_kleene(fa_auto* automaton, int variant);
-
-/**
- * @brief Optimizes an automaton (minimizes states).
- * @param automaton The automaton to optimize
- * @return Optimized automaton with minimal states
- */
-fa_auto* fa_auto_optimize(fa_auto* automaton);
-
-/**
- * @brief Minimizes an automaton using Moore's algorithm.
- * @param automaton The automaton to minimize
- * @return Minimized automaton
- */
-fa_auto* fa_auto_minimize_moore(const fa_auto *automaton);
 
 // ============================================================================
 // Automaton Queries and Checks

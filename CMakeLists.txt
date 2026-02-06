@@ -21,6 +21,9 @@ add_library(fa_lib
     src/regex/regexpr.c
     src/io/fa_auto_io.c
     src/fa.c
+    src/fa_operations.c
+    src/fa_styles.c
+    src/fa_utils.c
 )
 
 # Set properties for the library

@@ -11,7 +11,7 @@ void fa_auto_print_metadata(const fa_auto* automaton) {
     }
 
     printf("\n=== Automaton Metadata ===\n");
-    printf("States: %d\n", automaton->nstates);
+    printf("States: %d\n", automaton->capacity);
     
     if (automaton->alphabet != NULL) {
         printf("Alphabet size: %d\n", automaton->alphabet->length);
@@ -23,7 +23,7 @@ void fa_auto_print_metadata(const fa_auto* automaton) {
     int accept_states = 0;
     int dead_states = 0;
     
-    for (int i = 0; i < automaton->nstates; i++) {
+    for (int i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
         if (state == NULL) continue;
         
@@ -46,7 +46,7 @@ void fa_auto_print_metadata(const fa_auto* automaton) {
     printf("Accept states: %d\n", accept_states);
     printf("Dead states: %d\n", dead_states);
     printf("Density: %.2f transitions/state\n", 
-           automaton->nstates > 0 ? (float)total_transitions / automaton->nstates : 0.0);
+           automaton->capacity > 0 ? (float)total_transitions / automaton->capacity : 0.0);
     printf("==========================\n");
 }
 
@@ -59,7 +59,7 @@ void fa_auto_print_metadata_verbose(const fa_auto* automaton) {
     printf("\n=== Finite Automaton Metadata ===\n");
     
     // Basic metadata
-    printf("Number of states: %d\n", automaton->nstates);
+    printf("Number of states: %d\n", automaton->capacity);
     
     // Alphabet information
     if (automaton->alphabet != NULL) {
@@ -78,7 +78,7 @@ void fa_auto_print_metadata_verbose(const fa_auto* automaton) {
     int start_states = 0;
     int accept_states = 0;
     
-    for (int i = 0; i < automaton->nstates; i++) {
+    for (int i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
         if (state == NULL) {
             printf("  State %d: NULL\n", i);
@@ -117,7 +117,7 @@ void fa_auto_print_metadata_verbose(const fa_auto* automaton) {
     printf("\n--- Summary ---\n");
     printf("Total transitions: %d\n", total_transitions);
     printf("Average transitions per state: %.2f\n", 
-           automaton->nstates > 0 ? (float)total_transitions / automaton->nstates : 0.0);
+           automaton->capacity > 0 ? (float)total_transitions / automaton->capacity : 0.0);
     printf("Start states: %d\n", start_states);
     printf("Accept states: %d\n", accept_states);
     
@@ -130,7 +130,7 @@ void fa_auto_print_metadata_verbose(const fa_auto* automaton) {
     char* max_state_label = NULL;
     char* min_state_label = NULL;
     
-    for (int i = 0; i < automaton->nstates; i++) {
+    for (int i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
         if (state == NULL) continue;
         
@@ -159,7 +159,7 @@ void fa_auto_print_metadata_verbose(const fa_auto* automaton) {
     // Check for dead states (no outgoing transitions)
     int dead_states = 0;
     printf("Dead states (no outgoing transitions): ");
-    for (int i = 0; i < automaton->nstates; i++) {
+    for (int i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
         if (state && state->trans == NULL) {
             printf("\"%s\" ", state->label ? state->label : "(null)");
@@ -199,7 +199,7 @@ void fa_transitions_print_matrix(const fa_auto* automaton){
     
     // Create a simple matrix representation
     printf("     ");
-    for (size_t j = 0; j < automaton->nstates; j++) {
+    for (size_t j = 0; j < automaton->capacity; j++) {
         if (automaton->states[j] != NULL && automaton->states[j]->label != NULL) {
             printf("%-10.10s ", automaton->states[j]->label);
         } else {
@@ -208,14 +208,14 @@ void fa_transitions_print_matrix(const fa_auto* automaton){
     }
     printf("\n");
     
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         if (automaton->states[i] != NULL && automaton->states[i]->label != NULL) {
             printf("%-4s ", automaton->states[i]->label);
         } else {
             printf("NULL ");
         }
         
-        for (size_t j = 0; j < automaton->nstates; j++) {
+        for (size_t j = 0; j < automaton->capacity; j++) {
             // Check for transitions from state i to state j
             bool has_transition = false;
             if (automaton->states[i] != NULL) {
@@ -244,7 +244,7 @@ void fa_states_print(const fa_auto* automaton){
 
     printf("\nSTATES:\n");
 
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
         
         if (state == NULL) {
@@ -277,7 +277,7 @@ void fa_transitions_print(const fa_auto* automaton){
     }
 
 
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
 
         printf("  State[%zu]:\n", i);
@@ -327,7 +327,7 @@ void fa_auto_print_verbose(const fa_auto* automaton) {
     
     // Basic metadata
     printf("BASIC INFO:\n");
-    printf("  Number of states: %zu\n", automaton->nstates);
+    printf("  Number of states: %zu\n", automaton->capacity);
     
     if (automaton->alphabet != NULL) {
         printf("  Alphabet length: %d\n", automaton->alphabet->length);
@@ -344,7 +344,7 @@ void fa_auto_print_verbose(const fa_auto* automaton) {
     printf("\nSTATES:\n");
     printf("==================================================================\n");
     
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
         
         if (state == NULL) {
@@ -404,7 +404,7 @@ void fa_auto_print_verbose(const fa_auto* automaton) {
     printf("  automaton address: %p\n", (void*)automaton);
     printf("  states array: %p\n", (void*)automaton->states);
     
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         printf("    states[%zu]: %p", i, (void*)automaton->states[i]);
         
         if (automaton->states[i] != NULL) {
@@ -432,7 +432,7 @@ void fa_auto_print_verbose(const fa_auto* automaton) {
     
     // Create a simple matrix representation
     printf("     ");
-    for (size_t j = 0; j < automaton->nstates; j++) {
+    for (size_t j = 0; j < automaton->capacity; j++) {
         if (automaton->states[j] != NULL && automaton->states[j]->label != NULL) {
             printf("%-10.10s ", automaton->states[j]->label);
         } else {
@@ -441,14 +441,14 @@ void fa_auto_print_verbose(const fa_auto* automaton) {
     }
     printf("\n");
     
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         if (automaton->states[i] != NULL && automaton->states[i]->label != NULL) {
             printf("%-4s ", automaton->states[i]->label);
         } else {
             printf("NULL ");
         }
         
-        for (size_t j = 0; j < automaton->nstates; j++) {
+        for (size_t j = 0; j < automaton->capacity; j++) {
             // Check for transitions from state i to state j
             bool has_transition = false;
             if (automaton->states[i] != NULL) {
@@ -473,7 +473,7 @@ void fa_auto_print_verbose(const fa_auto* automaton) {
     int errors = 0;
     
     // Check 1: NULL states in array
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         if (automaton->states[i] == NULL) {
             printf("  [ERROR] states[%zu] is NULL\n", i);
             errors++;
@@ -481,7 +481,7 @@ void fa_auto_print_verbose(const fa_auto* automaton) {
     }
     
     // Check 2: State label validity
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         if (automaton->states[i] != NULL) {
             if (automaton->states[i]->label == NULL) {
                 printf("  [ERROR] states[%zu]->label is NULL\n", i);
@@ -506,7 +506,7 @@ void fa_auto_print_verbose(const fa_auto* automaton) {
     }
     
     // Check 3: Transition consistency
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         if (automaton->states[i] != NULL) {
             int counted_trans = 0;
             fa_trans* trans = automaton->states[i]->trans;
@@ -547,10 +547,10 @@ void fa_auto_print(const fa_auto* automaton) {
     }
     
     printf("=== QUICK AUTOMATON CHECK ===\n");
-    printf("Number of states: %zu\n", automaton->nstates);
+    printf("Number of states: %zu\n", automaton->capacity);
     
     printf("\nChecking state labels (CRITICAL FOR YOUR BUG):\n");
-    for (size_t i = 0; i < automaton->nstates; i++) {
+    for (size_t i = 0; i < automaton->capacity; i++) {
         fa_state* state = automaton->states[i];
         
         printf("State %zu:\n", i);
@@ -603,4 +603,42 @@ void fa_auto_print(const fa_auto* automaton) {
     printf("  → Labels were set to NULL\n");
     printf("If label pointers look valid but strings are garbage:\n");
     printf("  → Memory corruption\n");
+}
+
+
+void fa_operation_results_print(const fa_operation_results* results) {
+    if (!results) {
+        printf("No operation results\n");
+        return;
+    }
+    
+    printf("\n=== Operation Results ===\n");
+    printf("Success: %s\n", results->success ? "Yes" : "No");
+    
+    if (!results->success) {
+        printf("Error: %s\n", results->error_message);
+        return;
+    }
+    
+    printf("Operations performed:\n");
+    if (results->performed_ops & FA_OP_UNION) {
+        printf("  ✓ Union: ");
+        if (results->union_result) {
+            printf("%d states\n", results->union_result->capacity);
+        } else {
+            printf("Failed\n");
+        }
+    }
+    
+    if (results->performed_ops & FA_OP_INTERSECTION) {
+        printf("  ✓ Intersection: ");
+        if (results->intersection_result) {
+            printf("%d states\n", results->intersection_result->capacity);
+        } else {
+            printf("Failed\n");
+        }
+    }
+    
+    
+    printf("===========================\n");
 }
